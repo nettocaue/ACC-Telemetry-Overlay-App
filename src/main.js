@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, globalShortcut, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, globalShortcut, screen, autoUpdater } from 'electron';
 import started from 'electron-squirrel-startup';
 import { AccBroadcastClient } from './broadcast/accBroadcastClient.js';
 import { AccSharedMemoryClient } from './telemetry/accSharedMemory.js';
@@ -22,6 +22,7 @@ function runApp() {
   let mainWindow = null;
   let tray = null;
   let lockedWindows = [];
+  let updateDownloaded = false;
   const widgetWindows = new Map();
   let editModeEnabled = false;
   const broadcastClient = new AccBroadcastClient();
@@ -395,6 +396,13 @@ function runApp() {
     });
     tray.on('right-click', () => {
       const menu = Menu.buildFromTemplate([
+        ...(updateDownloaded ? [
+          {
+            label: '↻ Reiniciar para instalar atualização',
+            click: () => { app.isQuitting = true; autoUpdater.quitAndInstall(); },
+          },
+          { type: 'separator' },
+        ] : []),
         {
           label: mainWindow?.isVisible() ? 'Esconder janela principal' : 'Mostrar janela principal',
           click: () => {
@@ -446,6 +454,24 @@ function runApp() {
     createLockedWindows(); // everything else starts consolidated per monitor
     createTray();
     globalShortcut.register('F12', () => setEditMode(!editModeEnabled));
+
+    if (app.isPackaged) {
+      autoUpdater.setFeedURL({
+        url: `https://update.electronjs.org/nettocaue/ACC-Telemetry-Overlay-App/win32-x64/${app.getVersion()}`,
+        serverType: 'json',
+      });
+      autoUpdater.on('update-downloaded', (_e, _notes, releaseName) => {
+        updateDownloaded = true;
+        tray.displayBalloon({
+          iconType: 'info',
+          title: 'ACC Telemetry App — Atualização pronta',
+          content: `Versão ${releaseName} baixada. Clique com botão direito no ícone da bandeja e escolha "Reiniciar para instalar atualização".`,
+        });
+      });
+      autoUpdater.on('error', () => {});
+      // Verifica 1 minuto após o início para não atrasar o startup
+      setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 60_000);
+    }
 
     app.on('activate', () => {
       if (!mainWindow) {
