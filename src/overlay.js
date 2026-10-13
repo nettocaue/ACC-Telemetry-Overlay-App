@@ -48,7 +48,7 @@ function useGraphics() {
 }
 
 function formatMs(ms) {
-  if (!ms || ms <= 0) return '--:--.---';
+  if (!ms || ms < 1000) return '--:--.---'; // < 1 s = shared memory not yet populated
   const totalSecs = Math.floor(ms / 1000);
   const mins = Math.floor(totalSecs / 60);
   const secs = totalSecs % 60;
@@ -63,11 +63,18 @@ function tyreTempColor(temp) {
   return '#e82020';
 }
 
-function rainIcon(intensity) {
-  if (intensity < 0.05) return '☀';
-  if (intensity < 0.25) return '⛅';
-  if (intensity < 0.6)  return '🌦';
-  return '🌧';
+function rainLabel(intensity) {
+  if (intensity < 0.05) return 'Sol';
+  if (intensity < 0.25) return 'Nublado';
+  if (intensity < 0.6)  return 'Chuva';
+  return 'Temporal';
+}
+
+function rainColor(intensity) {
+  if (intensity < 0.05) return '#f0c000';
+  if (intensity < 0.25) return '#aaaaaa';
+  if (intensity < 0.6)  return '#4499ff';
+  return '#2266cc';
 }
 
 function useAllCars() {
@@ -372,7 +379,8 @@ function FuelWidget() {
   const completedLaps = graphics?.completedLaps ?? 0;
   const fuelEst = graphics?.fuelEstimatedLaps;
 
-  const avgPerLap = completedLaps > 0 ? usedFuel / completedLaps : null;
+  // avgPerLap only meaningful when enough fuel has been consumed (>0.1 L)
+  const avgPerLap = (completedLaps > 0 && usedFuel > 0.1) ? usedFuel / completedLaps : null;
   const lapsRemaining = avgPerLap && fuel ? fuel / avgPerLap : null;
 
   const row = (label, value) =>
@@ -384,11 +392,11 @@ function FuelWidget() {
   return h('div', { className: 'widget-card' }, [
     h(WidgetHeader, { key: 'h', label: 'COMBUSTÍVEL' }),
     h('div', { key: 'b', className: 'widget-body widget-body-rows' }, [
-      row('Restante',    fuel != null ? `${fuel.toFixed(1)} L` : '--'),
+      row('Restante',    fuel != null && fuel > 0 ? `${fuel.toFixed(1)} L` : '--'),
       row('Média/volta', avgPerLap != null ? `${avgPerLap.toFixed(2)} L` : '--'),
       row('Voltas rest.',lapsRemaining != null ? lapsRemaining.toFixed(1) : '--'),
       row('Est. ACC',    fuelEst != null && fuelEst > 0 ? fuelEst.toFixed(1) : '--'),
-      row('Usado stint', usedFuel > 0 ? `${usedFuel.toFixed(1)} L` : '--'),
+      row('Usado stint', usedFuel > 0.1 ? `${usedFuel.toFixed(1)} L` : '--'),
     ]),
   ]);
 }
@@ -424,7 +432,11 @@ function LapTimerWidget() {
   const total = graphics?.numberOfLaps ?? 0;
   const laps  = graphics?.completedLaps ?? 0;
 
-  const curColor = graphics?.isDeltaPositive ? '#f0c000' : '#1adc2a';
+  // Only color-code when there's a valid current time to compare
+  const hasCurrentTime = graphics?.iCurrentTime >= 1000;
+  const curColor = hasCurrentTime
+    ? (graphics?.isDeltaPositive ? '#f0c000' : '#1adc2a')
+    : undefined;
 
   const row = (label, value, color) =>
     h('div', { className: 'lap-row' }, [
@@ -469,15 +481,17 @@ function WeatherWidget() {
       h('span', { key: 'grip', className: 'weather-grip', style: { color: gripColor } }, gripLabel),
     ]),
     h('div', { key: 'temps', className: 'weather-temps' }, [
-      h('span', { key: 'air',  className: 'weather-temp-item' }, `☀ ${airTemp != null ? airTemp.toFixed(0) : '--'}°C`),
+      h('span', { key: 'air',  className: 'weather-temp-item' }, `Ar ${airTemp > 0 ? airTemp.toFixed(0) : '--'}°C`),
       h('span', { key: 'sep',  className: 'weather-temp-sep'  }, '|'),
-      h('span', { key: 'road', className: 'weather-temp-item' }, `⬛ ${roadTemp != null ? roadTemp.toFixed(0) : '--'}°C`),
+      h('span', { key: 'road', className: 'weather-temp-item' }, `Pista ${roadTemp > 0 ? roadTemp.toFixed(0) : '--'}°C`),
     ]),
     h('div', { key: 'forecast', className: 'weather-forecast' },
       slots.map((s) =>
         h('div', { key: s.label, className: 'weather-slot' }, [
-          h('div', { key: 'icon', className: 'weather-icon' }, rainIcon(s.val)),
-          h('div', { key: 'pct',  className: 'weather-pct'  }, `${Math.round(s.val * 100)}%`),
+          h('div', { key: 'lbl2', className: 'weather-slot-label' }, rainLabel(s.val)),
+          h('div', { key: 'pct',  className: 'weather-pct', style: { color: rainColor(s.val) } },
+            `${Math.round(s.val * 100)}%`
+          ),
           h('div', { key: 'lbl',  className: 'weather-slot-label' }, s.label),
         ])
       )

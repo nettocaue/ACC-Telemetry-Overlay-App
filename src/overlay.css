@@ -472,16 +472,11 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1px;
-}
-
-.weather-icon {
-  font-size: 1.2rem;
-  line-height: 1;
+  gap: 2px;
 }
 
 .weather-pct {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
@@ -489,4 +484,5 @@ html, body {
   font-size: 0.58rem;
   opacity: 0.5;
   letter-spacing: 0.04em;
+  text-align: center;
 }
