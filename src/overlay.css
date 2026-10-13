@@ -1,0 +1,295 @@
+html, body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  height: 100%;
+}
+
+.overlay {
+  height: 100vh;
+  width: 100vw;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.locked-overlay {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+.locked-widget-slot {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.overlay-editing {
+  /* A margin here (not marked as a drag region) is required so Windows can
+     still hit-test the window edges for native resize — if the whole window
+     surface is a drag region, resizable:true has nowhere to grab. */
+  padding: 6px;
+  cursor: move;
+}
+
+.overlay-editing .widget-card {
+  -webkit-app-region: drag;
+  outline: 2px dashed #e8201c;
+  outline-offset: -2px;
+}
+
+.overlay-resize-grip {
+  -webkit-app-region: no-drag;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 55%, #e8201c 55%);
+  border-radius: 0 0 10px 0;
+  z-index: 10;
+}
+
+.widget-card {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #f2f2f2;
+  background: rgba(10, 10, 10, 0.85);
+  border-left: 4px solid #e8201c;
+  border-radius: 6px;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.widget-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.widget-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.widget-body-rows {
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+}
+
+.overlay-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.row-label {
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.row-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.overlay-speed {
+  font-size: 2.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.overlay-unit {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 0.4rem;
+}
+
+.overlay-gear {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.standings-body {
+  flex: 1;
+  overflow: hidden;
+  padding: 4px 0;
+}
+
+.standings-empty {
+  padding: 1rem;
+  text-align: center;
+  opacity: 0.6;
+  font-size: 0.85rem;
+}
+
+.standings-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr 3.2rem 2.4rem;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: 0.85rem;
+}
+
+.standings-row:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.standings-pos {
+  font-weight: 700;
+  color: #e8201c;
+}
+
+.standings-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.standings-num,
+.standings-laps {
+  opacity: 0.7;
+  text-align: right;
+}
+
+.tyres-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 4px;
+  padding: 6px;
+}
+
+.tyre-cell {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.tyre-label {
+  font-size: 0.65rem;
+  opacity: 0.6;
+  letter-spacing: 0.05em;
+}
+
+.tyre-temp {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.tyre-pressure {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.telemetry-card {
+  flex-direction: row;
+  align-items: stretch;
+  background: rgba(10, 10, 10, 0.78);
+  border-left: none;
+  padding: 8px;
+  gap: 6px;
+}
+
+.telemetry-accent {
+  width: 4px;
+  flex: 0 0 4px;
+  background: #e8201c;
+  border-radius: 2px;
+}
+
+.telemetry-vlabel {
+  flex: 0 0 auto;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pedal-trace {
+  flex: 1;
+  height: 100%;
+  display: block;
+  background: #0a0a0a;
+  border-radius: 2px;
+  min-width: 0;
+}
+
+.trace-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trace-line-gas {
+  stroke: #18e018;
+  stroke-width: 3px;
+}
+
+.trace-line-brake {
+  stroke: #ff2d2d;
+  stroke-width: 2px;
+}
+
+.trace-line-steer {
+  stroke: #c7c7c7;
+  stroke-width: 1.5px;
+}
+
+.scalebar {
+  flex: 0 0 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.scalebar-tick {
+  font-size: 0.6rem;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.scalebar-track {
+  flex: 1;
+  width: 12px;
+  background: #0a0a0a;
+  border-radius: 2px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.scalebar-fill {
+  width: 100%;
+}
+
+.scalebar-gas {
+  background: #18e018;
+}
+
+.scalebar-brake {
+  background: #ff2d2d;
+}
