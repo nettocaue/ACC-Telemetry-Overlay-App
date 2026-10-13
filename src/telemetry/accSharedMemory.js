@@ -200,6 +200,102 @@ function parseStatic(buf) {
   return { numCars, carModel, track, maxRpm, maxFuel };
 }
 
+function parseGraphics(buf) {
+  const r = new Reader(buf);
+  const packetId = r.i32();
+  r.i32(); // status
+  r.i32(); // session
+  r.wstring(15); // currentTime string
+  r.wstring(15); // lastTime string
+  r.wstring(15); // bestTime string
+  r.wstring(15); // split
+  const completedLaps = r.i32();
+  const position = r.i32();
+  const iCurrentTime = r.f32();   // current lap ms
+  const iLastTime = r.f32();      // last lap ms
+  const iBestTime = r.f32();      // best lap ms
+  const sessionTimeLeft = r.f32();
+  r.f32(); // distanceTraveled
+  const isInPit = r.bool();
+  r.i32(); // currentSectorIndex
+  r.f32(); // lastSectorTime
+  const numberOfLaps = r.i32();
+  const tyreCompound = r.wstring(33, 2); // +2 padding to 4-byte boundary
+  r.f32(); // replayTimeMultiplier
+  r.f32(); // normalizedCarPosition
+  r.i32(); // activeCars
+  r.arr2F(60, 3); // carCoordinates[60][3] = 720 bytes
+  for (let i = 0; i < 60; i++) r.i32(); // carID[60] = 240 bytes
+  r.i32(); // playerCarID
+  r.f32(); // penaltyTime
+  r.i32(); // flag
+  r.i32(); // penalty
+  r.i32(); // idealLineOn
+  const isInPitLane = r.bool();
+  r.f32(); // surfaceGrip
+  r.i32(); // mandatoryPitDone
+  const windSpeed = r.f32();
+  const windDirection = r.f32();
+  r.i32(); // isSetupMenuVisible
+  r.i32(); // mainDisplayIndex
+  r.i32(); // mirrorDisplayIndex
+  const rainIntensity = r.f32();
+  const rainIntensityIn10min = r.f32();
+  const rainIntensityIn30min = r.f32();
+  r.i32(); // currentTyreSet
+  r.f32(); // mfdTyreSet
+  r.f32(); // mfdFuelToAdd
+  r.arrF(4); // mfdTyrePressure[4]
+  const trackGripStatus = r.i32();
+  r.i32(); // rainLights
+  r.i32(); // flashingLights
+  r.i32(); // lightsStage
+  r.f32(); // exhaustTemperature
+  r.i32(); // wiperLV
+  r.i32(); // driverStintTotalTimeLeft
+  r.i32(); // driverStintTimeLeft
+  r.i32(); // rainTyres
+  r.i32(); // sessionIndex
+  const usedFuel = r.f32();
+  r.wstring(15, 2); // deltaLapTime + padding
+  r.f32(); // iDeltaLapTime
+  r.wstring(15, 2); // estimatedLapTime + padding
+  const iEstimatedLapTime = r.f32();
+  const isDeltaPositive = r.bool();
+  r.f32(); // iSplit
+  const isValidLap = r.bool();
+  const fuelEstimatedLaps = r.f32();
+  r.wstring(33, 2); // trackStatus + padding
+  r.f32(); // missingMandatoryPits
+  const clock = r.f32();
+
+  return {
+    packetId,
+    completedLaps,
+    position,
+    iCurrentTime,
+    iLastTime,
+    iBestTime,
+    sessionTimeLeft,
+    isInPit,
+    isInPitLane,
+    numberOfLaps,
+    tyreCompound,
+    windSpeed,
+    windDirection,
+    rainIntensity,
+    rainIntensityIn10min,
+    rainIntensityIn30min,
+    trackGripStatus,
+    usedFuel,
+    iEstimatedLapTime,
+    isDeltaPositive,
+    isValidLap,
+    fuelEstimatedLaps,
+    clock,
+  };
+}
+
 class SharedSection {
   constructor(name, size) {
     this.name = name;
@@ -243,6 +339,8 @@ export class AccSharedMemoryClient extends EventEmitter {
     super();
     this.physics = new SharedSection('Local\\acpmf_physics', 800);
     this.staticSection = new SharedSection('Local\\acpmf_static', 784);
+    this.graphicsSection = new SharedSection('Local\\acpmf_graphics', 1700);
+    this.lastGraphicsPacketId = null;
     this.timer = null;
     this.lastPacketId = null;
     this.lastStaticSnapshot = null;
@@ -258,6 +356,8 @@ export class AccSharedMemoryClient extends EventEmitter {
     this.timer = null;
     this.physics.close();
     this.staticSection.close();
+    this.graphicsSection.close();
+    this.lastGraphicsPacketId = null;
     this.lastPacketId = null;
   }
 
@@ -279,6 +379,14 @@ export class AccSharedMemoryClient extends EventEmitter {
       if (staticSnapshot !== this.lastStaticSnapshot) {
         this.lastStaticSnapshot = staticSnapshot;
         this.emit('static', staticData);
+      }
+      const graphicsReady = this.graphicsSection.tryOpen();
+      if (graphicsReady) {
+        const graphics = parseGraphics(this.graphicsSection.read());
+        if (graphics.packetId !== this.lastGraphicsPacketId) {
+          this.lastGraphicsPacketId = graphics.packetId;
+          this.emit('graphics', graphics);
+        }
       }
     } catch (err) {
       this.emit('error', err);

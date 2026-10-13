@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('acc', {
   onReregistering: (cb) => subscribe('acc:reregistering', cb),
   onPhysics: (cb) => subscribe('acc:physics', cb),
   onStaticTelemetry: (cb) => subscribe('acc:staticTelemetry', cb),
+  onGraphics: (cb) => subscribe('acc:graphics', cb),
   onSharedMemoryError: (cb) => subscribe('acc:sharedMemoryError', cb),
 });
 

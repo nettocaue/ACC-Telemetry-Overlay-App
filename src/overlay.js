@@ -41,6 +41,35 @@ function useStaticTelemetry() {
   return staticData;
 }
 
+function useGraphics() {
+  const [data, setData] = useState(null);
+  useEffect(() => window.acc.onGraphics(setData), []);
+  return data;
+}
+
+function formatMs(ms) {
+  if (!ms || ms <= 0) return '--:--.---';
+  const totalSecs = Math.floor(ms / 1000);
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  const millis = Math.round(ms % 1000);
+  return `${mins}:${String(secs).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
+}
+
+function tyreTempColor(temp) {
+  if (temp < 70)  return '#4488ff';
+  if (temp < 95)  return '#1adc2a';
+  if (temp < 110) return '#f0c000';
+  return '#e82020';
+}
+
+function rainIcon(intensity) {
+  if (intensity < 0.05) return '☀';
+  if (intensity < 0.25) return '⛅';
+  if (intensity < 0.6)  return '🌦';
+  return '🌧';
+}
+
 function useAllCars() {
   const [cars, setCars] = useState({});
   const [entries, setEntries] = useState({});
@@ -241,49 +270,79 @@ function TelemetryWidget() {
   ]);
 }
 
+const GRIP_LABELS = ['Verde', 'Rápida', 'Ótima', 'Oleosa', 'Úmida', 'Molhada', 'Alagada'];
+const GRIP_COLORS = ['#1adc2a', '#88cc44', '#44dd88', '#f0c000', '#ff8800', '#4488ff', '#0044ff'];
 const WHEEL_LABELS = ['FL', 'FR', 'RL', 'RR'];
 
+function compoundAbbr(str) {
+  if (!str) return '';
+  const s = str.toLowerCase();
+  if (s.includes('wet'))   return 'W';
+  if (s.includes('inter')) return 'I';
+  if (s.includes('hard'))  return 'H';
+  if (s.includes('mediu')) return 'M';
+  if (s.includes('soft'))  return 'S';
+  if (s.includes('dry'))   return 'D';
+  return str[0]?.toUpperCase() ?? '';
+}
+
 function TyresWidget() {
-  const physics = usePhysics();
+  const physics  = usePhysics();
+  const graphics = useGraphics();
+  const compound = compoundAbbr(graphics?.tyreCompound ?? '');
+
   if (!physics) {
     return h('div', { className: 'widget-card' }, [
-      h(WidgetHeader, { key: 'header', label: 'PNEUS' }),
-      h('div', { key: 'body', className: 'widget-body' }, 'Aguardando dados…'),
+      h(WidgetHeader, { key: 'h', label: 'PNEUS' }),
+      h('div', { key: 'b', className: 'widget-body' }, 'Aguardando dados…'),
     ]);
   }
+
   return h('div', { className: 'widget-card' }, [
-    h(WidgetHeader, { key: 'header', label: 'PNEUS' }),
-    h(
-      'div',
-      { key: 'body', className: 'tyres-grid' },
-      WHEEL_LABELS.map((label, i) =>
-        h('div', { key: label, className: 'tyre-cell' }, [
-          h('div', { key: 'label', className: 'tyre-label' }, label),
-          h('div', { key: 'temp', className: 'tyre-temp' }, `${physics.tyreCoreTemp[i].toFixed(0)}°C`),
-          h('div', { key: 'press', className: 'tyre-pressure' }, `${physics.wheelPressure[i].toFixed(1)} psi`),
-        ])
-      )
+    h(WidgetHeader, { key: 'h', label: compound ? `PNEUS — ${compound}` : 'PNEUS' }),
+    h('div', { key: 'g', className: 'tyres-grid' },
+      WHEEL_LABELS.map((label, i) => {
+        const temp  = physics.tyreCoreTemp[i];
+        const press = (physics.wheelPressure[i] * 6.895).toFixed(0);
+        const wear  = physics.tyreWear[i] != null ? physics.tyreWear[i].toFixed(0) : '--';
+        const color = tyreTempColor(temp);
+        return h('div', { key: label, className: 'tyre-cell' }, [
+          h('div', { key: 'lbl', className: 'tyre-label' }, `${label}${compound ? ' ' + compound : ''}`),
+          h('div', { key: 'temp', className: 'tyre-temp', style: { color } }, `${temp.toFixed(0)}°`),
+          h('div', { key: 'press', className: 'tyre-pressure' }, `${press} kPa`),
+          h('div', { key: 'wear', className: 'tyre-wear' }, `${wear}%`),
+        ]);
+      })
     ),
   ]);
 }
 
 function FuelWidget() {
-  const physics = usePhysics();
-  const staticData = useStaticTelemetry();
+  const physics  = usePhysics();
+  const graphics = useGraphics();
+
   const fuel = physics?.fuel;
-  const maxFuel = staticData?.maxFuel;
-  const percent = fuel != null && maxFuel ? Math.round((fuel / maxFuel) * 100) : null;
+  const usedFuel = graphics?.usedFuel ?? 0;
+  const completedLaps = graphics?.completedLaps ?? 0;
+  const fuelEst = graphics?.fuelEstimatedLaps;
+
+  const avgPerLap = completedLaps > 0 ? usedFuel / completedLaps : null;
+  const lapsRemaining = avgPerLap && fuel ? fuel / avgPerLap : null;
+
+  const row = (label, value) =>
+    h('div', { className: 'fuel-row' }, [
+      h('span', { key: 'l', className: 'fuel-label' }, label),
+      h('span', { key: 'v', className: 'fuel-value' }, value),
+    ]);
+
   return h('div', { className: 'widget-card' }, [
-    h(WidgetHeader, { key: 'header', label: 'COMBUSTÍVEL' }),
-    h('div', { key: 'body', className: 'widget-body widget-body-rows' }, [
-      h('div', { key: 'fuel', className: 'overlay-row' }, [
-        h('span', { key: 'l', className: 'row-label' }, 'Restante'),
-        h('span', { key: 'v', className: 'row-value' }, fuel != null ? `${fuel.toFixed(1)} kg` : '--'),
-      ]),
-      h('div', { key: 'percent', className: 'overlay-row' }, [
-        h('span', { key: 'l', className: 'row-label' }, 'Nível'),
-        h('span', { key: 'v', className: 'row-value' }, percent != null ? `${percent}%` : '--'),
-      ]),
+    h(WidgetHeader, { key: 'h', label: 'COMBUSTÍVEL' }),
+    h('div', { key: 'b', className: 'widget-body widget-body-rows' }, [
+      row('Restante',    fuel != null ? `${fuel.toFixed(1)} L` : '--'),
+      row('Média/volta', avgPerLap != null ? `${avgPerLap.toFixed(2)} L` : '--'),
+      row('Voltas rest.',lapsRemaining != null ? lapsRemaining.toFixed(1) : '--'),
+      row('Est. ACC',    fuelEst != null && fuelEst > 0 ? fuelEst.toFixed(1) : '--'),
+      row('Usado stint', usedFuel > 0 ? `${usedFuel.toFixed(1)} L` : '--'),
     ]),
   ]);
 }
@@ -312,6 +371,74 @@ function DamageWidget() {
   ]);
 }
 
+function LapTimerWidget() {
+  const graphics = useGraphics();
+
+  const pos   = graphics?.position ?? 0;
+  const total = graphics?.numberOfLaps ?? 0;
+  const laps  = graphics?.completedLaps ?? 0;
+
+  const curColor = graphics?.isDeltaPositive ? '#f0c000' : '#1adc2a';
+
+  const row = (label, value, color) =>
+    h('div', { className: 'lap-row' }, [
+      h('span', { key: 'l', className: 'lap-label' }, label),
+      h('span', { key: 'v', className: 'lap-value', style: color ? { color } : undefined }, value),
+    ]);
+
+  return h('div', { className: 'widget-card' }, [
+    h('div', { key: 'hdr', className: 'lap-header' }, [
+      h('span', { key: 'title', className: 'widget-header-text' }, 'LAP TIMER'),
+      pos > 0 && h('span', { key: 'pos', className: 'lap-position' }, `P${pos}${total > 0 ? `/${total}` : ''}`),
+    ]),
+    h('div', { key: 'body', className: 'widget-body widget-body-rows' }, [
+      row('ATUAL',    formatMs(graphics?.iCurrentTime),    curColor),
+      row('ÚLTIMA',   formatMs(graphics?.iLastTime),       null),
+      row('MELHOR',   formatMs(graphics?.iBestTime),       '#e8201c'),
+      row('PREV.',    formatMs(graphics?.iEstimatedLapTime), null),
+      row('VOLTAS',   `${laps}${total > 0 ? ` / ${total}` : ''}`, null),
+    ]),
+  ]);
+}
+
+function WeatherWidget() {
+  const physics  = usePhysics();
+  const graphics = useGraphics();
+
+  const airTemp  = physics?.airTemp;
+  const roadTemp = physics?.roadTemp;
+  const grip     = graphics?.trackGripStatus ?? 0;
+  const gripLabel = GRIP_LABELS[grip] ?? '—';
+  const gripColor = GRIP_COLORS[grip] ?? '#f2f2f2';
+
+  const slots = [
+    { label: 'AGORA',   val: graphics?.rainIntensity ?? 0 },
+    { label: '+10 min', val: graphics?.rainIntensityIn10min ?? 0 },
+    { label: '+30 min', val: graphics?.rainIntensityIn30min ?? 0 },
+  ];
+
+  return h('div', { className: 'widget-card' }, [
+    h('div', { key: 'hdr', className: 'weather-header' }, [
+      h('span', { key: 'title', className: 'widget-header-text' }, 'CLIMA'),
+      h('span', { key: 'grip', className: 'weather-grip', style: { color: gripColor } }, gripLabel),
+    ]),
+    h('div', { key: 'temps', className: 'weather-temps' }, [
+      h('span', { key: 'air',  className: 'weather-temp-item' }, `☀ ${airTemp != null ? airTemp.toFixed(0) : '--'}°C`),
+      h('span', { key: 'sep',  className: 'weather-temp-sep'  }, '|'),
+      h('span', { key: 'road', className: 'weather-temp-item' }, `⬛ ${roadTemp != null ? roadTemp.toFixed(0) : '--'}°C`),
+    ]),
+    h('div', { key: 'forecast', className: 'weather-forecast' },
+      slots.map((s) =>
+        h('div', { key: s.label, className: 'weather-slot' }, [
+          h('div', { key: 'icon', className: 'weather-icon' }, rainIcon(s.val)),
+          h('div', { key: 'pct',  className: 'weather-pct'  }, `${Math.round(s.val * 100)}%`),
+          h('div', { key: 'lbl',  className: 'weather-slot-label' }, s.label),
+        ])
+      )
+    ),
+  ]);
+}
+
 const WIDGET_COMPONENTS = {
   speed: SpeedGearWidget,
   position: PositionLapsWidget,
@@ -320,6 +447,8 @@ const WIDGET_COMPONENTS = {
   tyres: TyresWidget,
   fuel: FuelWidget,
   damage: DamageWidget,
+  laptimer: LapTimerWidget,
+  weather:  WeatherWidget,
 };
 
 function handleResizeMouseDown(e) {

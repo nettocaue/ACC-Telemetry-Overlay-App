@@ -55,7 +55,7 @@ function runApp() {
   // down to ~10Hz — whether they're in their own edit-mode window or
   // sharing a per-monitor locked window with other widgets, since locked
   // windows never contain telemetry and so never need the full rate.
-  const PHYSICS_SLOW_WIDGET_IDS = ['tyres', 'fuel', 'damage'];
+  const PHYSICS_SLOW_WIDGET_IDS = ['tyres', 'fuel', 'damage', 'weather'];
   const PHYSICS_SLOW_DIVIDER = 6; // 60Hz / 6 = 10Hz
   let physicsTickCount = 0;
   const sendToPhysicsWidgets = (channel, payload) => {
@@ -95,6 +95,7 @@ function runApp() {
 
   sharedMemoryClient.on('physics', (data) => sendToPhysicsWidgets('acc:physics', data));
   sharedMemoryClient.on('static', (data) => sendToAllPhysicsWidgets('acc:staticTelemetry', data));
+  sharedMemoryClient.on('graphics', (data) => broadcastToWindows('acc:graphics', data));
   sharedMemoryClient.on('error', (err) => broadcastToWindows('acc:sharedMemoryError', err.message));
   sharedMemoryClient.start(16); // ~60Hz — matches frame rate, minimizes pedal/RPM trace lag
 
