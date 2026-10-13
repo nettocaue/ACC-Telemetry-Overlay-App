@@ -9,13 +9,13 @@ import iconPath from './assets/icon.png';
 
 if (started) {
   app.quit();
-}
-
-const gotSingleInstanceLock = app.requestSingleInstanceLock();
-if (!gotSingleInstanceLock) {
-  app.quit();
 } else {
-  runApp();
+  const gotSingleInstanceLock = app.requestSingleInstanceLock();
+  if (!gotSingleInstanceLock) {
+    app.quit();
+  } else {
+    runApp();
+  }
 }
 
 function runApp() {

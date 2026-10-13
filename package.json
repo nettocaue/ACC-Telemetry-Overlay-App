@@ -1,9 +1,9 @@
 {
   "name": "acc-telemetry-app",
-  "productName": "acc-telemetry-app",
+  "productName": "ACC Telemetry App",
   "version": "1.0.0",
   "private": true,
-  "description": "My Electron application description",
+  "description": "Overlays de telemetria em tempo real para Assetto Corsa Competizione",
   "keywords": [],
   "license": "MIT",
   "author": {
