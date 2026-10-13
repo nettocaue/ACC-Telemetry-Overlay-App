@@ -1,4 +1,9 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, globalShortcut, screen, autoUpdater } from 'electron';
+import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, globalShortcut, screen } from 'electron';
+import { createWriteStream, mkdirSync } from 'fs';
+import { get as httpsGet } from 'https';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { spawn } from 'child_process';
 import started from 'electron-squirrel-startup';
 import { AccBroadcastClient } from './broadcast/accBroadcastClient.js';
 import { AccSharedMemoryClient } from './telemetry/accSharedMemory.js';
@@ -6,6 +11,89 @@ import { loadSettings, saveSettings } from './config/settingsStore.js';
 import { ensureBroadcastingConfig } from './config/accConfig.js';
 import { WIDGET_DEFS } from './widgets/registry.js';
 import iconPath from './assets/icon.png';
+
+const GITHUB_REPO = 'nettocaue/ACC-Telemetry-Overlay-App';
+let pendingInstallerPath = null;
+
+function semverGt(a, b) {
+  const pa = a.replace(/^v/, '').split('.').map(Number);
+  const pb = b.replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] ?? 0) > (pb[i] ?? 0)) return true;
+    if ((pa[i] ?? 0) < (pb[i] ?? 0)) return false;
+  }
+  return false;
+}
+
+function httpsGetJson(url, redirects = 5) {
+  return new Promise((resolve, reject) => {
+    httpsGet(url, { headers: { 'User-Agent': 'acc-telemetry-app' } }, (res) => {
+      if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location && redirects > 0) {
+        resolve(httpsGetJson(res.headers.location, redirects - 1));
+        return;
+      }
+      if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return; }
+      let body = '';
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
+    }).on('error', reject);
+  });
+}
+
+function downloadFile(url, dest, redirects = 10) {
+  return new Promise((resolve, reject) => {
+    httpsGet(url, { headers: { 'User-Agent': 'acc-telemetry-app' } }, (res) => {
+      if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location && redirects > 0) {
+        resolve(downloadFile(res.headers.location, dest, redirects - 1));
+        return;
+      }
+      if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return; }
+      const out = createWriteStream(dest);
+      res.pipe(out);
+      out.on('finish', resolve);
+      out.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+async function checkForUpdate(tray, getFlag, setFlag) {
+  try {
+    const release = await httpsGetJson(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+    const latestTag = release.tag_name ?? '';
+    const current = app.getVersion();
+    if (!semverGt(latestTag, current)) return;
+
+    const asset = release.assets?.find((a) => a.name?.endsWith('-Setup.exe'));
+    if (!asset) return;
+
+    const dir = join(tmpdir(), 'acc-telemetry-update');
+    mkdirSync(dir, { recursive: true });
+    const dest = join(dir, asset.name);
+
+    await downloadFile(asset.browser_download_url, dest);
+    pendingInstallerPath = dest;
+    setFlag(true);
+
+    tray.displayBalloon({
+      iconType: 'info',
+      title: 'ACC Telemetry App — Atualização pronta',
+      content: `Versão ${latestTag} disponível. Clique com botão direito no ícone da bandeja e escolha "Instalar atualização e reiniciar".`,
+    });
+  } catch {
+    // silent — update check is best-effort
+  }
+}
+
+function launchPendingInstaller() {
+  if (!pendingInstallerPath) return;
+  // Spawn the installer silently and detached so it survives after app.quit()
+  spawn(pendingInstallerPath, ['/S'], {
+    detached: true,
+    stdio: 'ignore',
+  }).unref();
+  app.isQuitting = true;
+  app.quit();
+}
 
 if (started) {
   app.quit();
@@ -398,8 +486,8 @@ function runApp() {
       const menu = Menu.buildFromTemplate([
         ...(updateDownloaded ? [
           {
-            label: '↻ Reiniciar para instalar atualização',
-            click: () => { app.isQuitting = true; autoUpdater.quitAndInstall(); },
+            label: '↻ Instalar atualização e reiniciar',
+            click: () => launchPendingInstaller(),
           },
           { type: 'separator' },
         ] : []),
@@ -456,21 +544,9 @@ function runApp() {
     globalShortcut.register('F12', () => setEditMode(!editModeEnabled));
 
     if (app.isPackaged) {
-      autoUpdater.setFeedURL({
-        url: `https://update.electronjs.org/nettocaue/ACC-Telemetry-Overlay-App/win32-x64/${app.getVersion()}`,
-        serverType: 'json',
-      });
-      autoUpdater.on('update-downloaded', (_e, _notes, releaseName) => {
-        updateDownloaded = true;
-        tray.displayBalloon({
-          iconType: 'info',
-          title: 'ACC Telemetry App — Atualização pronta',
-          content: `Versão ${releaseName} baixada. Clique com botão direito no ícone da bandeja e escolha "Reiniciar para instalar atualização".`,
-        });
-      });
-      autoUpdater.on('error', () => {});
-      // Verifica 1 minuto após o início para não atrasar o startup
-      setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 60_000);
+      // Check GitHub releases API for a newer NSIS installer, download it
+      // in the background, then offer a one-click install via tray.
+      setTimeout(() => checkForUpdate(tray, () => updateDownloaded, (v) => { updateDownloaded = v; }), 60_000);
     }
 
     app.on('activate', () => {

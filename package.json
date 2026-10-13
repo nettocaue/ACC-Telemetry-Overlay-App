@@ -1,7 +1,7 @@
 {
   "name": "acc-telemetry-app",
   "productName": "ACC Telemetry App",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Overlays de telemetria em tempo real para Assetto Corsa Competizione",
   "keywords": [],
@@ -16,6 +16,7 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "release": "electron-forge release",
+    "build:installer": "node build-installer.mjs",
     "lint": "oxlint && oxfmt --check",
     "lint:fix": "oxlint --fix && oxfmt --write"
   },
