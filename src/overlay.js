@@ -120,32 +120,78 @@ function PositionLapsWidget() {
   ]);
 }
 
+const CUP_NAMES  = ['Overall', 'Pro-Am', 'Am', 'Silver', 'National'];
+const CUP_COLORS = ['#e8201c', '#ff8c00', '#4499ff', '#aaaaaa', '#44cc88'];
+
+function formatGap(ms) {
+  if (!ms || ms <= 0) return '—';
+  if (ms < 60000) return `+${(ms / 1000).toFixed(3)}`;
+  const m = Math.floor(ms / 60000);
+  const s = ((ms % 60000) / 1000).toFixed(3).padStart(6, '0');
+  return `+${m}:${s}`;
+}
+
 function StandingsWidget() {
   const { cars, entries } = useAllCars();
-  const rows = Object.values(cars)
+  const focusedCar = useFocusedCar();
+  const focusedIdx = focusedCar?.carIndex;
+
+  const sorted = Object.values(cars)
     .filter((c) => c.position > 0)
-    .sort((a, b) => a.position - b.position)
-    .slice(0, 10);
+    .sort((a, b) => a.position - b.position);
+
+  if (sorted.length === 0) {
+    return h('div', { className: 'widget-card widget-card-tall' }, [
+      h(WidgetHeader, { key: 'h', label: 'CLASSIFICAÇÃO' }),
+      h('div', { key: 'b', className: 'widget-body' },
+        h('div', { className: 'standings-empty' }, 'Aguardando dados…')
+      ),
+    ]);
+  }
+
+  // Group consecutively by cup category (handles multi-class races)
+  const groups = [];
+  let lastCat = null;
+  for (const car of sorted) {
+    const cat = entries[car.carIndex]?.cupCategory ?? 0;
+    if (cat !== lastCat) { groups.push({ cat, cars: [] }); lastCat = cat; }
+    groups[groups.length - 1].cars.push(car);
+  }
+  const multiClass = groups.length > 1;
+
+  const renderRow = (car) => {
+    const entry  = entries[car.carIndex];
+    const driver = entry?.drivers?.[entry.currentDriverIndex];
+    const name   = driver?.shortName
+      || (driver ? `${driver.firstName?.[0] ?? ''}. ${driver.lastName ?? ''}` : '—');
+    const isFocused = car.carIndex === focusedIdx;
+    const gap = car.position === 1 ? '—' : formatGap(car.delta);
+    return h('div', {
+      key: car.carIndex,
+      className: `standings-row${isFocused ? ' standings-row-me' : ''}`,
+    }, [
+      h('span', { key: 'pos', className: `standings-pos${car.position <= 3 ? ' standings-pos-top' : ''}` }, car.position),
+      h('span', { key: 'name', className: 'standings-name' }, name),
+      h('span', { key: 'num',  className: 'standings-num'  }, entry ? `#${entry.raceNumber}` : ''),
+      h('span', { key: 'gap',  className: `standings-gap${isFocused ? ' standings-gap-me' : ''}` }, gap),
+    ]);
+  };
+
+  const items = [];
+  for (const { cat, cars: catCars } of groups) {
+    if (multiClass) {
+      items.push(h('div', {
+        key:       `cat-${cat}`,
+        className: 'standings-class-hdr',
+        style:     { borderLeftColor: CUP_COLORS[cat] ?? '#e8201c' },
+      }, CUP_NAMES[cat] ?? `Cat ${cat}`));
+    }
+    catCars.forEach((car) => items.push(renderRow(car)));
+  }
 
   return h('div', { className: 'widget-card widget-card-tall' }, [
-    h(WidgetHeader, { key: 'header', label: 'CLASSIFICAÇÃO' }),
-    h(
-      'div',
-      { key: 'body', className: 'standings-body' },
-      rows.length === 0
-        ? h('div', { className: 'standings-empty' }, 'Aguardando dados…')
-        : rows.map((car) => {
-            const entry = entries[car.carIndex];
-            const driver = entry?.drivers?.[entry.currentDriverIndex];
-            const name = driver ? `${driver.firstName?.[0] ?? ''}. ${driver.lastName ?? ''}` : `Carro #${car.carIndex}`;
-            return h('div', { key: car.carIndex, className: 'standings-row' }, [
-              h('span', { key: 'pos', className: 'standings-pos' }, car.position),
-              h('span', { key: 'name', className: 'standings-name' }, name),
-              h('span', { key: 'num', className: 'standings-num' }, entry ? `#${entry.raceNumber}` : ''),
-              h('span', { key: 'laps', className: 'standings-laps' }, car.laps),
-            ]);
-          })
-    ),
+    h(WidgetHeader, { key: 'h', label: 'CLASSIFICAÇÃO' }),
+    h('div', { key: 'b', className: 'standings-body' }, items),
   ]);
 }
 
