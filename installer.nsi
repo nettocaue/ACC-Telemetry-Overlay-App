@@ -23,6 +23,12 @@ InstallDirRegKey HKCU "${REG_APP}" "InstallDir"
 ; ── Visual MUI2 ───────────────────────────────────────────
 !define MUI_ABORTWARNING
 
+; Imagens da marca
+!define MUI_WELCOMEFINISHPAGE_BITMAP   "src\assets\installer-sidebar.bmp"
+!define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_BITMAP         "src\assets\installer-header.bmp"
+!define MUI_HEADERIMAGE_RIGHT
+
 !define MUI_WELCOMEPAGE_TITLE    "Bem-vindo ao ${APP_NAME}"
 !define MUI_WELCOMEPAGE_TEXT     "Este assistente irá instalar o ${APP_NAME} ${APP_VERSION} no seu computador.$\r$\n$\r$\nO aplicativo fornece overlays de telemetria em tempo real para o Assetto Corsa Competizione.$\r$\n$\r$\nClique em Avançar para continuar."
 
