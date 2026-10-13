@@ -42,7 +42,6 @@ const config = {
   makers: [
     new MakerSquirrel({
       loadingGif: './src/assets/installer-loading.gif',
-      setupIcon: './src/assets/icon.png',
     }),
     new MakerZIP({}),
     new MakerRpm({}),
