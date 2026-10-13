@@ -199,97 +199,131 @@ html, body {
   opacity: 0.8;
 }
 
-.telemetry-card {
-  flex-direction: row;
-  align-items: stretch;
-  background: rgba(10, 10, 10, 0.78);
+/* ── Telemetry HUD widget ────────────────────────────────── */
+.telemetry-hud {
+  flex-direction: column;
+  background: rgba(8, 8, 10, 0.9);
   border-left: none;
-  padding: 8px;
-  gap: 6px;
+  padding: 0;
+  overflow: hidden;
 }
 
-.telemetry-accent {
-  width: 4px;
-  flex: 0 0 4px;
-  background: #e8201c;
-  border-radius: 2px;
+.rpm-bar {
+  height: clamp(4px, 6vh, 10px);
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
-.telemetry-vlabel {
-  flex: 0 0 auto;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #fff;
+.rpm-fill {
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    #1adc2a 0%,
+    #1adc2a 55%,
+    #f0c000 72%,
+    #ff6010 87%,
+    #ff1010 100%
+  );
+  transition: width 60ms linear;
+}
+
+.telemetry-body {
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  padding: clamp(5px, 5vh, 10px) clamp(8px, 3vw, 16px);
+  gap: clamp(6px, 2vw, 12px);
+  min-height: 0;
 }
 
 .pedal-trace {
   flex: 1;
-  height: 100%;
   display: block;
-  background: #0a0a0a;
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
   min-width: 0;
 }
 
-.trace-line {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+
+.telemetry-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(5px, 1.5vw, 10px);
 }
 
-.trace-line-gas {
-  stroke: #18e018;
-  stroke-width: 3px;
+.pedal-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(4px, 1vw, 8px);
 }
 
-.trace-line-brake {
-  stroke: #ff2d2d;
-  stroke-width: 2px;
-}
-
-.trace-line-steer {
-  stroke: #c7c7c7;
-  stroke-width: 1.5px;
-}
-
-.scalebar {
-  flex: 0 0 28px;
+.pedal-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: clamp(2px, 0.8vh, 5px);
 }
 
-.scalebar-tick {
-  font-size: 0.6rem;
-  font-weight: 700;
-  opacity: 0.8;
-}
-
-.scalebar-track {
-  flex: 1;
-  width: 12px;
-  background: #0a0a0a;
-  border-radius: 2px;
+.pedal-track {
+  width: clamp(10px, 3.5vw, 20px);
+  height: clamp(30px, 55vh, 80px);
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 3px;
   display: flex;
   align-items: flex-end;
   overflow: hidden;
 }
 
-.scalebar-fill {
+.pedal-fill {
   width: 100%;
+  border-radius: 2px;
+  transition: height 50ms linear;
 }
 
-.scalebar-gas {
-  background: #18e018;
+.pedal-gas {
+  background: #1adc2a;
 }
 
-.scalebar-brake {
-  background: #ff2d2d;
+.pedal-brake {
+  background: #e82020;
+}
+
+.pedal-col-label {
+  font-size: clamp(0.4rem, 1.2vh, 0.55rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.telemetry-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0;
+}
+
+.hud-speed {
+  font-size: clamp(1.4rem, 8vh, 3.2rem);
+  font-weight: 700;
+  line-height: 1;
+  color: #f2f2f2;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.hud-unit {
+  font-size: clamp(0.45rem, 1.5vh, 0.7rem);
+  color: rgba(255, 255, 255, 0.42);
+  letter-spacing: 0.08em;
+}
+
+.hud-gear {
+  font-size: clamp(1rem, 5.5vh, 2.2rem);
+  font-weight: 700;
+  line-height: 1;
+  color: #1adc2a;
+  margin-top: clamp(3px, 1vh, 8px);
 }

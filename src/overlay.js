@@ -121,81 +121,123 @@ function StandingsWidget() {
 }
 
 const TRACE_WINDOW_MS = 5000;
-const TRACE_WIDTH = 240;
-const TRACE_HEIGHT = 110;
 
-function clamp01(v) {
-  return v < 0 ? 0 : v > 1 ? 1 : v;
-}
-
-// Builds all three trace paths (gas, brake, steer) in a single pass instead
-// of scanning the sample buffer three separate times per render.
-function buildTraces(samples, now) {
-  let gasD = '';
-  let brakeD = '';
-  let steerD = '';
-  for (let i = 0; i < samples.length; i++) {
-    const s = samples[i];
-    const x = (TRACE_WIDTH - ((now - s.t) / TRACE_WINDOW_MS) * TRACE_WIDTH).toFixed(1);
-    const cmd = i === 0 ? 'M' : 'L';
-    gasD += `${cmd}${x},${(TRACE_HEIGHT - clamp01(s.gas) * TRACE_HEIGHT).toFixed(1)} `;
-    brakeD += `${cmd}${x},${(TRACE_HEIGHT - clamp01(s.brake) * TRACE_HEIGHT).toFixed(1)} `;
-    steerD += `${cmd}${x},${(TRACE_HEIGHT - clamp01((s.steerAngle + 1) / 2) * TRACE_HEIGHT).toFixed(1)} `;
+function drawTrace(canvas, samples) {
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  if (!w || !h) return;
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
   }
-  return { gasD, brakeD, steerD };
-}
-
-function ScaleBar({ percent, colorClass }) {
-  return h('div', { className: 'scalebar' }, [
-    h('div', { key: 'top', className: 'scalebar-tick' }, '100'),
-    h('div', { key: 'track', className: 'scalebar-track' }, [
-      h('div', { key: 'fill', className: `scalebar-fill ${colorClass}`, style: { height: `${percent}%` } }),
-    ]),
-    h('div', { key: 'bottom', className: 'scalebar-tick' }, '0'),
-  ]);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  if (samples.length < 2) return;
+  const now = Date.now();
+  const line = (color, lw, key) => {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    for (let i = 0; i < samples.length; i++) {
+      const s = samples[i];
+      const x = w * (1 - (now - s.t) / TRACE_WINDOW_MS);
+      const y = h * (1 - Math.max(0, Math.min(1, s[key])));
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  };
+  line('#1adc2a', 2,   'gas');
+  line('#e82020', 1.5, 'brake');
 }
 
 function TelemetryWidget() {
-  const physics = usePhysics();
-  const samplesRef = useRef([]);
-  const lastPacketRef = useRef(null);
+  const canvasRef   = useRef(null);
+  const rpmFillRef  = useRef(null);
+  const brakeBarRef = useRef(null);
+  const gasBarRef   = useRef(null);
+  const speedRef    = useRef(null);
+  const gearRef     = useRef(null);
+  const samplesRef  = useRef([]);
+  const rafRef      = useRef(null);
+  const staticRef   = useRef(null);
 
-  // Mutates a plain array in place (push + bounded slice) instead of
-  // spreading/filtering a new array on every physics tick — at 60Hz that
-  // allocation churn was a real source of the jank/stutter.
-  const now = Date.now();
-  if (physics && physics.packetId !== lastPacketRef.current) {
-    lastPacketRef.current = physics.packetId;
-    const arr = samplesRef.current;
-    arr.push({ t: now, gas: physics.gas, brake: physics.brake, steerAngle: physics.steerAngle });
-    const cutoff = now - TRACE_WINDOW_MS;
-    let dropCount = 0;
-    while (dropCount < arr.length && arr[dropCount].t < cutoff) dropCount++;
-    if (dropCount > 0) samplesRef.current = arr.slice(dropCount);
-  }
+  useEffect(() => window.acc.onStaticTelemetry((d) => { staticRef.current = d; }), []);
 
-  const { gasD, brakeD, steerD } = buildTraces(samplesRef.current, now);
+  useEffect(() => {
+    let lastPacketId = null;
+    return window.acc.onPhysics((p) => {
+      if (p.packetId === lastPacketId) return;
+      lastPacketId = p.packetId;
 
-  return h('div', { className: 'widget-card telemetry-card' }, [
-    h('div', { key: 'accent', className: 'telemetry-accent' }),
-    h('div', { key: 'vlabel', className: 'telemetry-vlabel' }, 'TELEMETRY'),
-    h(
-      'svg',
-      {
-        key: 'trace',
-        className: 'pedal-trace',
-        viewBox: `0 0 ${TRACE_WIDTH} ${TRACE_HEIGHT}`,
-        preserveAspectRatio: 'none',
-      },
-      [
-        h('path', { key: 'steerLine', d: steerD, className: 'trace-line trace-line-steer' }),
-        h('path', { key: 'gasLine', d: gasD, className: 'trace-line trace-line-gas' }),
-        h('path', { key: 'brakeLine', d: brakeD, className: 'trace-line trace-line-brake' }),
-      ]
+      const now = Date.now();
+      const arr = samplesRef.current;
+      arr.push({ t: now, gas: p.gas, brake: p.brake });
+      const cutoff = now - TRACE_WINDOW_MS;
+      let drop = 0;
+      while (drop < arr.length && arr[drop].t < cutoff) drop++;
+      if (drop > 0) samplesRef.current = arr.slice(drop);
+
+      // RPM bar — direct DOM write, no React state
+      const maxRpm = staticRef.current?.maxRpm ?? 9000;
+      if (rpmFillRef.current)
+        rpmFillRef.current.style.width = `${Math.min(p.rpm / maxRpm, 1) * 100}%`;
+
+      // Pedal bars
+      if (brakeBarRef.current) brakeBarRef.current.style.height = `${p.brake * 100}%`;
+      if (gasBarRef.current)   gasBarRef.current.style.height   = `${p.gas   * 100}%`;
+
+      // Speed
+      if (speedRef.current)
+        speedRef.current.textContent = p.speedKmh != null ? Math.round(p.speedKmh) : '--';
+
+      // Gear — ACC shared memory: 0=R, 1=N, 2=1st, 3=2nd…
+      if (gearRef.current) {
+        const g = p.gear;
+        gearRef.current.textContent = g === 0 ? 'R' : g === 1 ? 'N' : String(g - 1);
+      }
+
+      // Canvas trace batched to next animation frame
+      if (!rafRef.current)
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          drawTrace(canvasRef.current, samplesRef.current);
+        });
+    });
+  }, []);
+
+  return h('div', { className: 'widget-card telemetry-hud' }, [
+    h('div', { key: 'rpm', className: 'rpm-bar' },
+      h('div', { ref: rpmFillRef, className: 'rpm-fill', style: { width: '0%' } })
     ),
-    // Brake on the left, accelerator on the right — matches real pedal layout.
-    h(ScaleBar, { key: 'brakeBar', percent: (physics?.brake ?? 0) * 100, colorClass: 'scalebar-brake' }),
-    h(ScaleBar, { key: 'gasBar', percent: (physics?.gas ?? 0) * 100, colorClass: 'scalebar-gas' }),
+    h('div', { key: 'body', className: 'telemetry-body' }, [
+      h('canvas', { key: 'trace', ref: canvasRef, className: 'pedal-trace' }),
+      h('div', { key: 'controls', className: 'telemetry-controls' }, [
+        h('div', { key: 'pedals', className: 'pedal-bars' }, [
+          h('div', { key: 'b', className: 'pedal-col' }, [
+            h('div', { key: 'track', className: 'pedal-track' },
+              h('div', { ref: brakeBarRef, className: 'pedal-fill pedal-brake', style: { height: '0%' } })
+            ),
+            h('span', { key: 'lbl', className: 'pedal-col-label' }, 'F'),
+          ]),
+          h('div', { key: 'g', className: 'pedal-col' }, [
+            h('div', { key: 'track', className: 'pedal-track' },
+              h('div', { ref: gasBarRef, className: 'pedal-fill pedal-gas', style: { height: '0%' } })
+            ),
+            h('span', { key: 'lbl', className: 'pedal-col-label' }, 'A'),
+          ]),
+        ]),
+        h('div', { key: 'readout', className: 'telemetry-readout' }, [
+          h('div', { key: 'speed', ref: speedRef, className: 'hud-speed' }, '--'),
+          h('div', { key: 'unit',  className: 'hud-unit' }, 'km/h'),
+          h('div', { key: 'gear',  ref: gearRef,  className: 'hud-gear'  }, '-'),
+        ]),
+      ]),
+    ]),
   ]);
 }
 
