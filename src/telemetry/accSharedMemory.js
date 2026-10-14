@@ -211,9 +211,11 @@ function parseGraphics(buf) {
   r.wstring(15); // split
   const completedLaps = r.i32();
   const position = r.i32();
-  const iCurrentTime = r.f32();   // current lap ms
-  const iLastTime = r.f32();      // last lap ms
-  const iBestTime = r.f32();      // best lap ms
+  // ACC stores these as seconds despite the "ms" name in the Kunos PDF —
+  // multiply by 1000 so the rest of the app works in milliseconds throughout.
+  const iCurrentTime = r.f32() * 1000;
+  const iLastTime = r.f32() * 1000;
+  const iBestTime = r.f32() * 1000;
   const sessionTimeLeft = r.f32();
   r.f32(); // distanceTraveled
   const isInPit = r.bool();
@@ -260,7 +262,7 @@ function parseGraphics(buf) {
   r.wstring(15, 2); // deltaLapTime + padding
   r.f32(); // iDeltaLapTime
   r.wstring(15, 2); // estimatedLapTime + padding
-  const iEstimatedLapTime = r.f32();
+  const iEstimatedLapTime = r.f32() * 1000;
   const isDeltaPositive = r.bool();
   r.f32(); // iSplit
   const isValidLap = r.bool();
