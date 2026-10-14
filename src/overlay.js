@@ -156,14 +156,16 @@ function StandingsWidget() {
     ]);
   }
 
-  // Group consecutively by cup category (handles multi-class races)
-  const groups = [];
-  let lastCat = null;
+  // Aggregate all cars per category, preserving position order within each group
+  const groupMap = new Map();
   for (const car of sorted) {
     const cat = entries[car.carIndex]?.cupCategory ?? 0;
-    if (cat !== lastCat) { groups.push({ cat, cars: [] }); lastCat = cat; }
-    groups[groups.length - 1].cars.push(car);
+    if (!groupMap.has(cat)) groupMap.set(cat, []);
+    groupMap.get(cat).push(car);
   }
+  const groups = [...groupMap.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([cat, cars]) => ({ cat, cars }));
   const multiClass = groups.length > 1;
 
   const renderRow = (car) => {
