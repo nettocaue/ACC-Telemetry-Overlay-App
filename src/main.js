@@ -25,6 +25,9 @@ function runApp() {
   let updateDownloaded = false;
   const widgetWindows = new Map();
   let editModeEnabled = false;
+  // Tracks locked windows being closed intentionally so their 'closed'
+  // handlers don't schedule a spurious createLockedWindows() respawn.
+  const closingLockedWindows = new Set();
   const broadcastClient = new AccBroadcastClient();
   const sharedMemoryClient = new AccSharedMemoryClient();
   const settings = loadSettings();
@@ -135,6 +138,7 @@ function runApp() {
   // it into the shared window made it compete for the same thread as
   // everything else and brought the jank right back.
   const setEditMode = (enabled) => {
+    if (editModeEnabled === enabled) return; // already in this state — nothing to do
     editModeEnabled = enabled; // set before closing windows so their
     // unexpected-exit handlers see the new mode and don't try to respawn.
 
@@ -149,7 +153,7 @@ function runApp() {
       closeLockedWindows();
       for (const def of WIDGET_DEFS) {
         if (def.id === 'telemetry') continue; // already has its own window
-        if (isWidgetEnabled(def.id)) createWidgetWindow(def);
+        if (isWidgetEnabled(def.id) && !widgetWindows.has(def.id)) createWidgetWindow(def);
       }
     } else {
       for (const [id, win] of [...widgetWindows]) {
@@ -279,7 +283,10 @@ function runApp() {
   // bounds are independently DPI-scaled), silently clipping widgets off
   // the edge. Per-display windows sidestep that entirely.
   const closeLockedWindows = () => {
-    for (const win of lockedWindows) win.close();
+    for (const win of lockedWindows) {
+      closingLockedWindows.add(win);
+      win.close();
+    }
     lockedWindows = [];
   };
 
@@ -308,8 +315,12 @@ function runApp() {
     const handleUnexpectedExit = () => {
       if (exitHandled) return;
       exitHandled = true;
+      const intentional = closingLockedWindows.has(win);
+      closingLockedWindows.delete(win);
       lockedWindows = lockedWindows.filter((w) => w !== win);
-      if (!editModeEnabled) {
+      // Only respawn on genuine unexpected crashes — intentional closes
+      // (from closeLockedWindows) must not trigger a second rebuild.
+      if (!intentional && !editModeEnabled) {
         setTimeout(() => {
           if (!editModeEnabled) createLockedWindows();
         }, 1000);
@@ -413,7 +424,7 @@ function runApp() {
       closeLockedWindows();
       for (const def of WIDGET_DEFS) {
         if (def.id === 'telemetry') continue;
-        if (isWidgetEnabled(def.id)) createWidgetWindow(def);
+        if (isWidgetEnabled(def.id) && !widgetWindows.has(def.id)) createWidgetWindow(def);
       }
     } else {
       closeLockedWindows();
