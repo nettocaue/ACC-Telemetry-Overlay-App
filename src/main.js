@@ -29,7 +29,17 @@ function runApp() {
   const sharedMemoryClient = new AccSharedMemoryClient();
   const settings = loadSettings();
 
-  const isWidgetEnabled = (id) => settings.widgets[id]?.enabled !== false;
+  // Returns the widgets map for the currently active profile.
+  const aw = () => {
+    const p = settings.profiles[settings.activeProfile];
+    if (!p) {
+      settings.activeProfile = Object.keys(settings.profiles)[0];
+      return settings.profiles[settings.activeProfile].widgets;
+    }
+    return p.widgets;
+  };
+
+  const isWidgetEnabled = (id) => aw()[id]?.enabled !== false;
 
   app.on('second-instance', () => {
     if (mainWindow) {
@@ -178,7 +188,7 @@ function runApp() {
   });
 
   const createWidgetWindow = (def) => {
-    const saved = settings.widgets[def.id] ?? {};
+    const saved = aw()[def.id] ?? {};
     const win = new BrowserWindow({
       width: saved.width ?? def.width,
       height: saved.height ?? def.height,
@@ -205,7 +215,7 @@ function runApp() {
     const persist = () => {
       const [x, y] = win.getPosition();
       const [width, height] = win.getSize();
-      settings.widgets[def.id] = { ...settings.widgets[def.id], x, y, width, height };
+      aw()[def.id] = { ...aw()[def.id], x, y, width, height };
       schedulePersistSettings();
     };
     win.on('moved', persist);
@@ -248,7 +258,7 @@ function runApp() {
 
   const getWidgetListWithGeometry = () =>
     WIDGET_DEFS.map((def) => {
-      const saved = settings.widgets[def.id] ?? {};
+      const saved = aw()[def.id] ?? {};
       return {
         id: def.id,
         title: def.title,
@@ -332,7 +342,7 @@ function runApp() {
   };
 
   ipcMain.handle('widgets:setEnabled', (_event, id, enabled) => {
-    settings.widgets[id] = { ...settings.widgets[id], enabled };
+    aw()[id] = { ...aw()[id], enabled };
     schedulePersistSettings();
 
     if (id === 'telemetry') {
@@ -353,6 +363,68 @@ function runApp() {
       closeLockedWindows();
       createLockedWindows();
     }
+  });
+
+  ipcMain.handle('app:version', () => app.getVersion());
+
+  ipcMain.handle('profiles:list', () => ({
+    active: settings.activeProfile,
+    names: Object.keys(settings.profiles),
+  }));
+
+  ipcMain.handle('profiles:create', (_e, name) => {
+    if (settings.profiles[name]) return false;
+    settings.profiles[name] = { widgets: {} };
+    settings.activeProfile = name;
+    schedulePersistSettings();
+    return true;
+  });
+
+  ipcMain.handle('profiles:rename', (_e, oldName, newName) => {
+    if (!settings.profiles[oldName] || settings.profiles[newName]) return false;
+    settings.profiles[newName] = settings.profiles[oldName];
+    delete settings.profiles[oldName];
+    if (settings.activeProfile === oldName) settings.activeProfile = newName;
+    schedulePersistSettings();
+    return true;
+  });
+
+  ipcMain.handle('profiles:delete', (_e, name) => {
+    const names = Object.keys(settings.profiles);
+    if (names.length <= 1 || !settings.profiles[name]) return false;
+    delete settings.profiles[name];
+    if (settings.activeProfile === name) {
+      settings.activeProfile = Object.keys(settings.profiles)[0];
+    }
+    schedulePersistSettings();
+    return true;
+  });
+
+  ipcMain.handle('profiles:switch', (_e, name) => {
+    if (!settings.profiles[name]) return false;
+    settings.activeProfile = name;
+    schedulePersistSettings();
+    if (editModeEnabled) {
+      for (const [id, win] of [...widgetWindows]) {
+        if (id === 'telemetry') continue;
+        win.close();
+        widgetWindows.delete(id);
+      }
+      closeLockedWindows();
+      for (const def of WIDGET_DEFS) {
+        if (def.id === 'telemetry') continue;
+        if (isWidgetEnabled(def.id)) createWidgetWindow(def);
+      }
+    } else {
+      closeLockedWindows();
+      createLockedWindows();
+    }
+    if (isWidgetEnabled('telemetry')) {
+      if (!widgetWindows.has('telemetry')) showWidget('telemetry');
+    } else {
+      if (widgetWindows.has('telemetry')) hideWidget('telemetry');
+    }
+    return true;
   });
 
   const createMainWindow = () => {

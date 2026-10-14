@@ -12,6 +12,15 @@ function App() {
   const [cars, setCars] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [widgetList, setWidgetList] = useState([]);
+  const [version, setVersion] = useState('');
+  const [profiles, setProfiles] = useState({ active: '', names: [] });
+  const [profileMode, setProfileMode] = useState(null); // null | 'new' | 'rename'
+  const [profileInput, setProfileInput] = useState('');
+
+  useEffect(() => {
+    window.app.getVersion().then(setVersion);
+    window.profiles.list().then(setProfiles);
+  }, []);
 
   useEffect(() => {
     window.editMode.get().then(setEditMode);
@@ -57,6 +66,52 @@ function App() {
     widgetList.forEach((w) => window.widgets.setEnabled(w.id, next));
   };
 
+  const switchProfile = async (name) => {
+    if (name === profiles.active) return;
+    await window.profiles.switch(name);
+    const updated = await window.profiles.list();
+    setProfiles(updated);
+    setWidgetList(await window.widgets.list());
+  };
+
+  const startNewProfile = () => {
+    setProfileMode('new');
+    setProfileInput('');
+  };
+
+  const startRenameProfile = () => {
+    setProfileMode('rename');
+    setProfileInput(profiles.active);
+  };
+
+  const cancelProfileEdit = () => setProfileMode(null);
+
+  const confirmProfileEdit = async () => {
+    const name = profileInput.trim();
+    if (!name) return;
+    if (profileMode === 'new') {
+      const ok = await window.profiles.create(name);
+      if (ok) {
+        setProfiles(await window.profiles.list());
+        setWidgetList(await window.widgets.list());
+      }
+    } else if (profileMode === 'rename') {
+      const ok = await window.profiles.rename(profiles.active, name);
+      if (ok) setProfiles(await window.profiles.list());
+    }
+    setProfileMode(null);
+  };
+
+  const deleteProfile = async () => {
+    if (profiles.names.length <= 1) return;
+    const ok = await window.profiles.delete(profiles.active);
+    if (ok) {
+      const updated = await window.profiles.list();
+      setProfiles(updated);
+      setWidgetList(await window.widgets.list());
+    }
+  };
+
   const focusedEntry = session ? cars[session.focusedCarIndex] : null;
   const activeDriver = focusedEntry?.drivers?.[focusedEntry.currentDriverIndex];
 
@@ -68,7 +123,7 @@ function App() {
         h('h1', { key: 'title' }, 'ACC Telemetry App'),
         h('p', { key: 'subtitle' }, 'Overlays de telemetria para Assetto Corsa Competizione'),
       ]),
-      h('span', { key: 'badge', className: 'version-badge' }, 'v1.0.0'),
+      h('span', { key: 'badge', className: 'version-badge' }, version ? `v${version}` : '…'),
     ]),
 
     h('section', { key: 'connection', className: 'panel' }, [
@@ -92,6 +147,44 @@ function App() {
           `Modo edição: ${editMode ? 'LIGADO' : 'DESLIGADO'}`
         ),
       ]),
+    ]),
+
+    h('section', { key: 'profiles', className: 'panel' }, [
+      h('div', { key: 'header', className: 'panel-header-row' }, [
+        h('h2', { key: 't' }, 'Perfis de Layout'),
+      ]),
+      profileMode
+        ? h('div', { key: 'edit', className: 'profile-edit-row' }, [
+            h('input', {
+              key: 'input',
+              className: 'profile-input',
+              value: profileInput,
+              placeholder: profileMode === 'new' ? 'Nome do novo perfil' : 'Novo nome',
+              onChange: (e) => setProfileInput(e.target.value),
+              onKeyDown: (e) => {
+                if (e.key === 'Enter') confirmProfileEdit();
+                if (e.key === 'Escape') cancelProfileEdit();
+              },
+              autoFocus: true,
+            }),
+            h('button', { key: 'confirm', onClick: confirmProfileEdit }, 'Salvar'),
+            h('button', { key: 'cancel', onClick: cancelProfileEdit }, 'Cancelar'),
+          ])
+        : h('div', { key: 'controls', className: 'profile-row' }, [
+            h(
+              'select',
+              {
+                key: 'select',
+                className: 'profile-select',
+                value: profiles.active,
+                onChange: (e) => switchProfile(e.target.value),
+              },
+              profiles.names.map((n) => h('option', { key: n, value: n }, n))
+            ),
+            h('button', { key: 'new', onClick: startNewProfile }, 'Novo'),
+            h('button', { key: 'rename', onClick: startRenameProfile }, 'Renomear'),
+            h('button', { key: 'delete', disabled: profiles.names.length <= 1, onClick: deleteProfile }, 'Excluir'),
+          ]),
     ]),
 
     h('section', { key: 'widgets', className: 'panel' }, [

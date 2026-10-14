@@ -2,9 +2,7 @@ import { app } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const defaults = {
-  widgets: {},
-};
+const DEFAULT_PROFILE = 'Default';
 
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
 
@@ -12,9 +10,22 @@ export function loadSettings() {
   try {
     const raw = fs.readFileSync(settingsPath(), 'utf8');
     const parsed = JSON.parse(raw);
-    return { ...defaults, ...parsed, widgets: { ...defaults.widgets, ...parsed.widgets } };
+    // Migrate from flat { widgets: {} } to profile-based schema
+    if (parsed.widgets && !parsed.profiles) {
+      return {
+        activeProfile: DEFAULT_PROFILE,
+        profiles: { [DEFAULT_PROFILE]: { widgets: parsed.widgets } },
+      };
+    }
+    return {
+      activeProfile: parsed.activeProfile ?? DEFAULT_PROFILE,
+      profiles: { [DEFAULT_PROFILE]: { widgets: {} }, ...parsed.profiles },
+    };
   } catch {
-    return { widgets: {} };
+    return {
+      activeProfile: DEFAULT_PROFILE,
+      profiles: { [DEFAULT_PROFILE]: { widgets: {} } },
+    };
   }
 }
 

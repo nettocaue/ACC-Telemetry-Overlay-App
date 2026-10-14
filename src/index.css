@@ -193,6 +193,30 @@ button:not(:disabled):hover {
   transform: translateX(16px);
 }
 
+.profile-row,
+.profile-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.profile-select,
+.profile-input {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #f2f2f2;
+  font-size: 0.9rem;
+}
+
+.profile-input:focus {
+  outline: none;
+  border-color: #e8201c;
+}
+
 .app-footer {
   margin-top: auto;
   padding: 0.8rem 0;

@@ -41,3 +41,15 @@ contextBridge.exposeInMainWorld('overlay', {
   resizeStart: () => ipcRenderer.invoke('overlay:resizeStart'),
   resizeBy: (dx, dy) => ipcRenderer.invoke('overlay:resizeBy', dx, dy),
 });
+
+contextBridge.exposeInMainWorld('app', {
+  getVersion: () => ipcRenderer.invoke('app:version'),
+});
+
+contextBridge.exposeInMainWorld('profiles', {
+  list: () => ipcRenderer.invoke('profiles:list'),
+  create: (name) => ipcRenderer.invoke('profiles:create', name),
+  rename: (oldName, newName) => ipcRenderer.invoke('profiles:rename', oldName, newName),
+  delete: (name) => ipcRenderer.invoke('profiles:delete', name),
+  switch: (name) => ipcRenderer.invoke('profiles:switch', name),
+});
