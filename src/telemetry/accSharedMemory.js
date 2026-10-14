@@ -310,7 +310,10 @@ class SharedSection {
     if (this.view) return true;
     const handle = OpenFileMappingW(FILE_MAP_READ, 0, this.name);
     if (!handle) return false;
-    const view = MapViewOfFile(handle, FILE_MAP_READ, 0, 0, this.size);
+    // Pass 0 to map the entire file — requesting an explicit size larger than
+    // what ACC created causes MapViewOfFile to return NULL on Windows, which
+    // was silently preventing the graphics section from ever opening.
+    const view = MapViewOfFile(handle, FILE_MAP_READ, 0, 0, 0);
     if (!view) {
       CloseHandle(handle);
       return false;
@@ -341,7 +344,7 @@ export class AccSharedMemoryClient extends EventEmitter {
     super();
     this.physics = new SharedSection('Local\\acpmf_physics', 800);
     this.staticSection = new SharedSection('Local\\acpmf_static', 784);
-    this.graphicsSection = new SharedSection('Local\\acpmf_graphics', 1700);
+    this.graphicsSection = new SharedSection('Local\\acpmf_graphics', 1516);
     this.lastGraphicsPacketId = null;
     this.timer = null;
     this.lastPacketId = null;
