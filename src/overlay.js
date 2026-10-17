@@ -86,6 +86,14 @@ function useAllCars() {
   const [cars, setCars] = useState({});
   const [entries, setEntries] = useState({});
   useEffect(() => {
+    // Names already received before this window existed.
+    window.acc.getEntryList().then((list) =>
+      setEntries((prev) => {
+        const next = { ...prev };
+        for (const e of list) next[e.carIndex] ??= e;
+        return next;
+      }),
+    );
     const unsubscribers = [
       window.acc.onRealtimeCarUpdate((data) =>
         setCars((prev) => ({ ...prev, [data.carIndex]: data })),
@@ -117,7 +125,7 @@ function SpeedGearWidget() {
       h(
         'div',
         { key: 'gear', className: 'overlay-gear' },
-        car ? (car.gear === 0 ? 'R' : car.gear === -1 ? 'N' : car.gear) : '-',
+        car ? (car.gear === -1 ? 'R' : car.gear === 0 ? 'N' : car.gear) : '-',
       ),
     ]),
   ]);
@@ -189,7 +197,10 @@ function StandingsWidget() {
 
   const renderRow = (car) => {
     const entry = entries[car.carIndex];
-    const driver = entry?.drivers?.[entry.currentDriverIndex];
+    // Realtime driverIndex follows driver swaps; the entry list's may be stale.
+    const driver =
+      entry?.drivers?.[car.driverIndex] ??
+      entry?.drivers?.[entry.currentDriverIndex];
     const fullName = driver
       ? `${driver.firstName ?? ''} ${driver.lastName ?? ''}`.trim()
       : '';

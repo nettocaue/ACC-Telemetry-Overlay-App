@@ -285,7 +285,7 @@ export class AccBroadcastClient extends EventEmitter {
           carIndex: r.u16(),
           driverIndex: r.u16(),
           driverCount: r.u8(),
-          gear: r.u8() - 1, // wire format is 0 = reverse, 1 = neutral
+          gear: r.u8() - 1, // wire 0 = reverse, 1 = neutral → -1 = R, 0 = N, 1+ = gear
           worldPosX: r.f32(),
           worldPosY: r.f32(),
           yaw: r.f32(),

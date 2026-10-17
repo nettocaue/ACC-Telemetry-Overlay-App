@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('acc', {
   onRealtimeCarUpdate: (cb) => subscribe('acc:realtimeCarUpdate', cb),
   onEntryList: (cb) => subscribe('acc:entryList', cb),
   onEntryListCar: (cb) => subscribe('acc:entryListCar', cb),
+  getEntryList: () => ipcRenderer.invoke('acc:getEntryList'),
   onTrackData: (cb) => subscribe('acc:trackData', cb),
   onBroadcastingEvent: (cb) => subscribe('acc:broadcastingEvent', cb),
   onError: (cb) => subscribe('acc:error', cb),

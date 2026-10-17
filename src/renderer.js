@@ -336,7 +336,7 @@ function App() {
         h(
           'p',
           { key: 'gear' },
-          `Marcha: ${car.gear === 0 ? 'R' : car.gear === -1 ? 'N' : car.gear}`,
+          `Marcha: ${car.gear === -1 ? 'R' : car.gear === 0 ? 'N' : car.gear}`,
         ),
         h(
           'p',

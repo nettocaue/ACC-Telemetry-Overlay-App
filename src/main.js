@@ -123,15 +123,40 @@ function runApp() {
   broadcastClient.on('realtimeUpdate', (data) =>
     broadcastToWindows('acc:realtimeUpdate', data),
   );
-  broadcastClient.on('realtimeCarUpdate', (data) =>
-    broadcastToWindows('acc:realtimeCarUpdate', data),
-  );
-  broadcastClient.on('entryList', (data) =>
-    broadcastToWindows('acc:entryList', data),
-  );
-  broadcastClient.on('entryListCar', (data) =>
-    broadcastToWindows('acc:entryListCar', data),
-  );
+  // ACC only sends driver names when the entry list is requested, so keep the
+  // latest copy here: overlay windows created later (edit mode, profile
+  // switch) fetch it on mount instead of showing nameless rows.
+  const entryListCache = new Map(); // carIndex -> entryListCar payload
+  let lastEntryListRequestAt = 0;
+  const requestEntryListThrottled = () => {
+    const now = Date.now();
+    if (now - lastEntryListRequestAt < 1000) return;
+    lastEntryListRequestAt = now;
+    broadcastClient.requestEntryList();
+  };
+  ipcMain.handle('acc:getEntryList', () => [...entryListCache.values()]);
+
+  broadcastClient.on('realtimeCarUpdate', (data) => {
+    // A car we have no entry for (joined mid-session) or whose driver count
+    // changed means our names are stale — ask ACC for a fresh entry list
+    // (same rule as Kunos's reference broadcasting client).
+    const entry = entryListCache.get(data.carIndex);
+    if (!entry || entry.drivers.length !== data.driverCount) {
+      requestEntryListThrottled();
+    }
+    broadcastToWindows('acc:realtimeCarUpdate', data);
+  });
+  broadcastClient.on('entryList', (data) => {
+    const current = new Set(data.carIndices);
+    for (const idx of entryListCache.keys()) {
+      if (!current.has(idx)) entryListCache.delete(idx);
+    }
+    broadcastToWindows('acc:entryList', data);
+  });
+  broadcastClient.on('entryListCar', (data) => {
+    entryListCache.set(data.carIndex, data);
+    broadcastToWindows('acc:entryListCar', data);
+  });
   broadcastClient.on('trackData', (data) =>
     broadcastToWindows('acc:trackData', data),
   );
