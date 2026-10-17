@@ -19,6 +19,9 @@ mkdirSync(join(__dirname, 'dist'), { recursive: true });
 console.log('\n[3/3] Compiling NSIS installer…');
 const NSIS_FALLBACK = 'C:\\Program Files (x86)\\NSIS\\makensis.exe';
 const makensis = existsSync(NSIS_FALLBACK) ? NSIS_FALLBACK : 'makensis';
-execFileSync(makensis, [`/DAPP_VERSION=${version}`, 'installer.nsi'], { stdio: 'inherit', cwd: __dirname });
+execFileSync(makensis, [`/DAPP_VERSION=${version}`, 'installer.nsi'], {
+  stdio: 'inherit',
+  cwd: __dirname,
+});
 
 console.log(`\nDone! dist\\ACC-Telemetry-App-${version}-Setup.exe`);

@@ -13,7 +13,13 @@ const DEFAULT_PORT = 9000;
 const DEFAULT_PASSWORD = 'acc-telemetry-app';
 
 function broadcastingConfigPath() {
-  return path.join(os.homedir(), 'Documents', 'Assetto Corsa Competizione', 'Config', 'broadcasting.json');
+  return path.join(
+    os.homedir(),
+    'Documents',
+    'Assetto Corsa Competizione',
+    'Config',
+    'broadcasting.json',
+  );
 }
 
 export function ensureBroadcastingConfig() {
@@ -46,5 +52,9 @@ export function ensureBroadcastingConfig() {
     // this session; the user just needs to run ACC once and restart us.
   }
 
-  return { port: defaults.updListenerPort, connectionPassword: defaults.connectionPassword, commandPassword: defaults.commandPassword };
+  return {
+    port: defaults.updListenerPort,
+    connectionPassword: defaults.connectionPassword,
+    commandPassword: defaults.commandPassword,
+  };
 }

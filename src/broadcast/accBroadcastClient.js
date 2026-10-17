@@ -131,10 +131,22 @@ export class AccBroadcastClient extends EventEmitter {
   }
 
   connect(options) {
-    const { host = '127.0.0.1', port = 9000, displayName = 'ACC Telemetry App', connectionPassword = '', commandPassword = '', updateIntervalMs = 100 } = options;
+    const {
+      host = '127.0.0.1',
+      port = 9000,
+      displayName = 'ACC Telemetry App',
+      connectionPassword = '',
+      commandPassword = '',
+      updateIntervalMs = 100,
+    } = options;
     this.host = host;
     this.port = port;
-    this.connectOptions = { displayName, connectionPassword, commandPassword, updateIntervalMs };
+    this.connectOptions = {
+      displayName,
+      connectionPassword,
+      commandPassword,
+      updateIntervalMs,
+    };
     this.socket = dgram.createSocket('udp4');
 
     this.socket.on('message', (msg) => {
@@ -149,11 +161,19 @@ export class AccBroadcastClient extends EventEmitter {
     // transitions (practice -> qualy -> race, or a session restart) without
     // ever telling us — re-registering on the same socket recovers from that
     // instead of leaving the widgets frozen on the last value forever.
-    this.watchdogTimer = setInterval(() => this._checkWatchdog(), WATCHDOG_INTERVAL_MS);
+    this.watchdogTimer = setInterval(
+      () => this._checkWatchdog(),
+      WATCHDOG_INTERVAL_MS,
+    );
   }
 
   _register() {
-    const { displayName, connectionPassword, commandPassword, updateIntervalMs } = this.connectOptions;
+    const {
+      displayName,
+      connectionPassword,
+      commandPassword,
+      updateIntervalMs,
+    } = this.connectOptions;
     this.lastMessageAt = Date.now();
     this._send(
       new Writer()
@@ -163,7 +183,7 @@ export class AccBroadcastClient extends EventEmitter {
         .string(connectionPassword)
         .u32(updateIntervalMs)
         .string(commandPassword)
-        .toBuffer()
+        .toBuffer(),
     );
   }
 
@@ -178,7 +198,12 @@ export class AccBroadcastClient extends EventEmitter {
 
   disconnect() {
     if (this.connectionId !== null) {
-      this._send(new Writer().u8(OUT.UNREGISTER_COMMAND_APPLICATION).u32(this.connectionId).toBuffer());
+      this._send(
+        new Writer()
+          .u8(OUT.UNREGISTER_COMMAND_APPLICATION)
+          .u32(this.connectionId)
+          .toBuffer(),
+      );
     }
     clearInterval(this.watchdogTimer);
     this.watchdogTimer = null;
@@ -191,12 +216,16 @@ export class AccBroadcastClient extends EventEmitter {
 
   requestEntryList() {
     if (this.connectionId === null) return;
-    this._send(new Writer().u8(OUT.REQUEST_ENTRY_LIST).u32(this.connectionId).toBuffer());
+    this._send(
+      new Writer().u8(OUT.REQUEST_ENTRY_LIST).u32(this.connectionId).toBuffer(),
+    );
   }
 
   requestTrackData() {
     if (this.connectionId === null) return;
-    this._send(new Writer().u8(OUT.REQUEST_TRACK_DATA).u32(this.connectionId).toBuffer());
+    this._send(
+      new Writer().u8(OUT.REQUEST_TRACK_DATA).u32(this.connectionId).toBuffer(),
+    );
   }
 
   _send(buffer) {
@@ -225,7 +254,10 @@ export class AccBroadcastClient extends EventEmitter {
         this.readOnly = r.bool();
         const errMsg = r.string();
         if (success) {
-          this.emit('connected', { connectionId: this.connectionId, readOnly: this.readOnly });
+          this.emit('connected', {
+            connectionId: this.connectionId,
+            readOnly: this.readOnly,
+          });
           this.requestEntryList();
           this.requestTrackData();
         } else {
@@ -335,7 +367,14 @@ export class AccBroadcastClient extends EventEmitter {
         const hudPages = [];
         for (let i = 0; i < hudPageCount; i++) hudPages.push(r.string());
 
-        this.emit('trackData', { connectionId, trackName, trackId, trackMeters, cameraSets, hudPages });
+        this.emit('trackData', {
+          connectionId,
+          trackName,
+          trackId,
+          trackMeters,
+          cameraSets,
+          hudPages,
+        });
         break;
       }
       default:

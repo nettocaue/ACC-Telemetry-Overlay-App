@@ -33,7 +33,8 @@ const config = {
       // directory itself must be let through (to be entered) even though
       // almost everything directly inside it still gets dropped below.
       if (/^[/\\]node_modules$/.test(file)) return false;
-      if (/^[/\\]node_modules[/\\](koffi|@koromix)($|[/\\])/.test(file)) return false;
+      if (/^[/\\]node_modules[/\\](koffi|@koromix)($|[/\\])/.test(file))
+        return false;
       if (/^[/\\]node_modules[/\\]/.test(file)) return true;
       return true;
     },

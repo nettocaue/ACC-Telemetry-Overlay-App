@@ -17,7 +17,12 @@ const NUL_CHAR = String.fromCharCode(0);
 // Win32 BOOL is a 4-byte int, not a 1-byte C/C++ bool — using koffi's 'bool'
 // here misaligns the native call and crashes the process (N-API fatal error).
 const kernel32 = koffi.load('kernel32.dll');
-const OpenFileMappingW = kernel32.func('__stdcall', 'OpenFileMappingW', 'void *', ['uint32', 'int32', 'wchar_t *']);
+const OpenFileMappingW = kernel32.func(
+  '__stdcall',
+  'OpenFileMappingW',
+  'void *',
+  ['uint32', 'int32', 'wchar_t *'],
+);
 const MapViewOfFile = kernel32.func('__stdcall', 'MapViewOfFile', 'void *', [
   'void *',
   'uint32',
@@ -25,8 +30,12 @@ const MapViewOfFile = kernel32.func('__stdcall', 'MapViewOfFile', 'void *', [
   'uint32',
   'size_t',
 ]);
-const UnmapViewOfFile = kernel32.func('__stdcall', 'UnmapViewOfFile', 'int32', ['void *']);
-const CloseHandle = kernel32.func('__stdcall', 'CloseHandle', 'int32', ['void *']);
+const UnmapViewOfFile = kernel32.func('__stdcall', 'UnmapViewOfFile', 'int32', [
+  'void *',
+]);
+const CloseHandle = kernel32.func('__stdcall', 'CloseHandle', 'int32', [
+  'void *',
+]);
 
 class Reader {
   constructor(buf) {
