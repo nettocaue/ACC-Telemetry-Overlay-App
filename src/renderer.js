@@ -13,7 +13,11 @@ function App() {
   const [editMode, setEditMode] = useState(false);
   const [widgetList, setWidgetList] = useState([]);
   const [version, setVersion] = useState('');
-  const [profiles, setProfiles] = useState({ active: '', names: [] });
+  const [profiles, setProfiles] = useState({
+    active: '',
+    activeEnabled: true,
+    names: [],
+  });
   const [profileMode, setProfileMode] = useState(null); // null | 'new' | 'rename'
   const [profileInput, setProfileInput] = useState('');
 
@@ -35,14 +39,20 @@ function App() {
         setError(msg);
       }),
       window.acc.onError((msg) => setError(msg)),
-      window.acc.onParseError((msg) => console.warn('ACC broadcast parse warning:', msg)),
+      window.acc.onParseError((msg) =>
+        console.warn('ACC broadcast parse warning:', msg),
+      ),
       window.acc.onReregistering(() => setStatus('connecting')),
       window.acc.onRealtimeUpdate((data) => setSession(data)),
       window.acc.onRealtimeCarUpdate((data) => {
-        setCar((prev) => (data.carIndex === session?.focusedCarIndex ? data : prev));
+        setCar((prev) =>
+          data.carIndex === session?.focusedCarIndex ? data : prev,
+        );
       }),
       window.acc.onTrackData((data) => setTrack(data)),
-      window.acc.onEntryListCar((data) => setCars((prev) => ({ ...prev, [data.carIndex]: data }))),
+      window.acc.onEntryListCar((data) =>
+        setCars((prev) => ({ ...prev, [data.carIndex]: data })),
+      ),
       window.editMode.onChanged(setEditMode),
     ];
     return () => unsubscribers.forEach((unsub) => unsub());
@@ -55,11 +65,14 @@ function App() {
   };
 
   const toggleWidget = (id, enabled) => {
-    setWidgetList((list) => list.map((w) => (w.id === id ? { ...w, enabled } : w)));
+    setWidgetList((list) =>
+      list.map((w) => (w.id === id ? { ...w, enabled } : w)),
+    );
     window.widgets.setEnabled(id, enabled);
   };
 
-  const allEnabled = widgetList.length > 0 && widgetList.every((w) => w.enabled);
+  const allEnabled =
+    widgetList.length > 0 && widgetList.every((w) => w.enabled);
   const toggleAllWidgets = () => {
     const next = !allEnabled;
     setWidgetList((list) => list.map((w) => ({ ...w, enabled: next })));
@@ -72,6 +85,11 @@ function App() {
     const updated = await window.profiles.list();
     setProfiles(updated);
     setWidgetList(await window.widgets.list());
+  };
+
+  const toggleProfileEnabled = async () => {
+    await window.profiles.setEnabled(!profiles.activeEnabled);
+    setProfiles(await window.profiles.list());
   };
 
   const startNewProfile = () => {
@@ -115,36 +133,60 @@ function App() {
   const focusedEntry = session ? cars[session.focusedCarIndex] : null;
   const activeDriver = focusedEntry?.drivers?.[focusedEntry.currentDriverIndex];
 
-  const statusLabel = { connected: 'Conectado', connecting: 'Aguardando a ACC…', disconnected: 'Desconectado' }[status];
+  const statusLabel = {
+    connected: 'Conectado',
+    connecting: 'Aguardando a ACC…',
+    disconnected: 'Desconectado',
+  }[status];
 
   return h('div', { className: 'app' }, [
     h('header', { key: 'header', className: 'app-header' }, [
       h('div', { key: 'title-block' }, [
         h('h1', { key: 'title' }, 'ACC Telemetry App'),
-        h('p', { key: 'subtitle' }, 'Overlays de telemetria para Assetto Corsa Competizione'),
+        h(
+          'p',
+          { key: 'subtitle' },
+          'Overlays de telemetria para Assetto Corsa Competizione',
+        ),
       ]),
-      h('span', { key: 'badge', className: 'version-badge' }, version ? `v${version}` : '…'),
+      h(
+        'span',
+        { key: 'badge', className: 'version-badge' },
+        version ? `v${version}` : '…',
+      ),
     ]),
 
     h('section', { key: 'connection', className: 'panel' }, [
       h('div', { key: 'row', className: 'panel-header-row' }, [
         h('h2', { key: 't' }, 'Conexão'),
-        h('span', { key: 'status', className: `status status-${status}` }, statusLabel),
+        h(
+          'span',
+          { key: 'status', className: `status status-${status}` },
+          statusLabel,
+        ),
       ]),
       h(
         'p',
         { key: 'hint' },
         status === 'connected'
           ? 'Recebendo dados da ACC — pode fechar essa janela, os widgets continuam funcionando.'
-          : 'Sem configuração necessária: basta abrir a ACC e entrar numa sessão. Conecta sozinho assim que o jogo responder.'
+          : 'Sem configuração necessária: basta abrir a ACC e entrar numa sessão. Conecta sozinho assim que o jogo responder.',
       ),
       error ? h('p', { key: 'error', className: 'error' }, error) : null,
       h('div', { key: 'actions', className: 'actions' }, [
-        h('button', { key: 'reconnect', onClick: handleReconnect }, 'Reconectar'),
         h(
           'button',
-          { key: 'editMode', className: 'btn-edit-mode', onClick: () => window.editMode.toggle() },
-          `Modo edição: ${editMode ? 'LIGADO' : 'DESLIGADO'}`
+          { key: 'reconnect', onClick: handleReconnect },
+          'Reconectar',
+        ),
+        h(
+          'button',
+          {
+            key: 'editMode',
+            className: 'btn-edit-mode',
+            onClick: () => window.editMode.toggle(),
+          },
+          `Modo edição: ${editMode ? 'LIGADO' : 'DESLIGADO'}`,
         ),
       ]),
     ]),
@@ -159,7 +201,8 @@ function App() {
               key: 'input',
               className: 'profile-input',
               value: profileInput,
-              placeholder: profileMode === 'new' ? 'Nome do novo perfil' : 'Novo nome',
+              placeholder:
+                profileMode === 'new' ? 'Nome do novo perfil' : 'Novo nome',
               onChange: (e) => setProfileInput(e.target.value),
               onKeyDown: (e) => {
                 if (e.key === 'Enter') confirmProfileEdit();
@@ -167,8 +210,16 @@ function App() {
               },
               autoFocus: true,
             }),
-            h('button', { key: 'confirm', onClick: confirmProfileEdit }, 'Salvar'),
-            h('button', { key: 'cancel', onClick: cancelProfileEdit }, 'Cancelar'),
+            h(
+              'button',
+              { key: 'confirm', onClick: confirmProfileEdit },
+              'Salvar',
+            ),
+            h(
+              'button',
+              { key: 'cancel', onClick: cancelProfileEdit },
+              'Cancelar',
+            ),
           ])
         : h('div', { key: 'controls', className: 'profile-row' }, [
             h(
@@ -179,18 +230,45 @@ function App() {
                 value: profiles.active,
                 onChange: (e) => switchProfile(e.target.value),
               },
-              profiles.names.map((n) => h('option', { key: n, value: n }, n))
+              profiles.names.map((n) => h('option', { key: n, value: n }, n)),
+            ),
+            h(
+              'button',
+              {
+                key: 'toggleProfile',
+                className: profiles.activeEnabled
+                  ? 'btn-profile-on'
+                  : 'btn-profile-off',
+                onClick: toggleProfileEnabled,
+              },
+              profiles.activeEnabled ? 'Desativar perfil' : 'Ativar perfil',
             ),
             h('button', { key: 'new', onClick: startNewProfile }, 'Novo'),
-            h('button', { key: 'rename', onClick: startRenameProfile }, 'Renomear'),
-            h('button', { key: 'delete', disabled: profiles.names.length <= 1, onClick: deleteProfile }, 'Excluir'),
+            h(
+              'button',
+              { key: 'rename', onClick: startRenameProfile },
+              'Renomear',
+            ),
+            h(
+              'button',
+              {
+                key: 'delete',
+                disabled: profiles.names.length <= 1,
+                onClick: deleteProfile,
+              },
+              'Excluir',
+            ),
           ]),
     ]),
 
     h('section', { key: 'widgets', className: 'panel' }, [
       h('div', { key: 'widgetsHeader', className: 'panel-header-row' }, [
         h('h2', { key: 't' }, 'Widgets'),
-        h('button', { key: 'toggleAll', onClick: toggleAllWidgets }, allEnabled ? 'Desativar todos' : 'Ativar todos'),
+        h(
+          'button',
+          { key: 'toggleAll', onClick: toggleAllWidgets },
+          allEnabled ? 'Desativar todos' : 'Ativar todos',
+        ),
       ]),
       h(
         'div',
@@ -207,27 +285,53 @@ function App() {
               }),
               h('span', { key: 'slider', className: 'switch-slider' }),
             ]),
-          ])
-        )
+          ]),
+        ),
       ),
     ]),
 
     track &&
       h('section', { key: 'track', className: 'panel' }, [
         h('h2', { key: 't' }, 'Pista'),
-        h('p', { key: 'name' }, `${track.trackName} (${(track.trackMeters / 1000).toFixed(2)} km)`),
+        h(
+          'p',
+          { key: 'name' },
+          `${track.trackName} (${(track.trackMeters / 1000).toFixed(2)} km)`,
+        ),
       ]),
 
     car &&
       h('section', { key: 'car', className: 'panel' }, [
         h('h2', { key: 't' }, 'Carro em foco'),
-        activeDriver && h('p', { key: 'driver' }, `Piloto: ${activeDriver.firstName} ${activeDriver.lastName}`),
-        focusedEntry && h('p', { key: 'team' }, `Equipe: ${focusedEntry.teamName} (#${focusedEntry.raceNumber})`),
+        activeDriver &&
+          h(
+            'p',
+            { key: 'driver' },
+            `Piloto: ${activeDriver.firstName} ${activeDriver.lastName}`,
+          ),
+        focusedEntry &&
+          h(
+            'p',
+            { key: 'team' },
+            `Equipe: ${focusedEntry.teamName} (#${focusedEntry.raceNumber})`,
+          ),
         h('p', { key: 'speed' }, `Velocidade: ${car.kmh} km/h`),
-        h('p', { key: 'gear' }, `Marcha: ${car.gear === 0 ? 'R' : car.gear === -1 ? 'N' : car.gear}`),
-        h('p', { key: 'pos' }, `Posição: ${car.position} (classe: ${car.cupPosition})`),
+        h(
+          'p',
+          { key: 'gear' },
+          `Marcha: ${car.gear === 0 ? 'R' : car.gear === -1 ? 'N' : car.gear}`,
+        ),
+        h(
+          'p',
+          { key: 'pos' },
+          `Posição: ${car.position} (classe: ${car.cupPosition})`,
+        ),
         h('p', { key: 'laps' }, `Voltas: ${car.laps}`),
-        h('p', { key: 'splinePos' }, `Posição na pista: ${(car.splinePosition * 100).toFixed(1)}%`),
+        h(
+          'p',
+          { key: 'splinePos' },
+          `Posição na pista: ${(car.splinePosition * 100).toFixed(1)}%`,
+        ),
         h('p', { key: 'delta' }, `Delta: ${(car.delta / 1000).toFixed(3)}s`),
       ]),
 

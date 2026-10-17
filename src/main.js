@@ -1,4 +1,14 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, globalShortcut, screen, autoUpdater } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Tray,
+  Menu,
+  nativeImage,
+  globalShortcut,
+  screen,
+  autoUpdater,
+} from 'electron';
 import started from 'electron-squirrel-startup';
 import { AccBroadcastClient } from './broadcast/accBroadcastClient.js';
 import { AccSharedMemoryClient } from './telemetry/accSharedMemory.js';
@@ -42,7 +52,12 @@ function runApp() {
     return p.widgets;
   };
 
-  const isWidgetEnabled = (id) => aw()[id]?.enabled !== false;
+  // A profile can be switched off as a whole without touching each widget's
+  // own toggle, so turning it back on restores exactly what was enabled.
+  const isProfileEnabled = () =>
+    settings.profiles[settings.activeProfile]?.enabled !== false;
+  const isWidgetConfigured = (id) => aw()[id]?.enabled !== false;
+  const isWidgetEnabled = (id) => isProfileEnabled() && isWidgetConfigured(id);
 
   app.on('second-instance', () => {
     if (mainWindow) {
@@ -94,22 +109,52 @@ function runApp() {
     }
   };
 
-  broadcastClient.on('connected', (data) => broadcastToWindows('acc:connected', data));
-  broadcastClient.on('registrationFailed', (msg) => broadcastToWindows('acc:registrationFailed', msg));
-  broadcastClient.on('realtimeUpdate', (data) => broadcastToWindows('acc:realtimeUpdate', data));
-  broadcastClient.on('realtimeCarUpdate', (data) => broadcastToWindows('acc:realtimeCarUpdate', data));
-  broadcastClient.on('entryList', (data) => broadcastToWindows('acc:entryList', data));
-  broadcastClient.on('entryListCar', (data) => broadcastToWindows('acc:entryListCar', data));
-  broadcastClient.on('trackData', (data) => broadcastToWindows('acc:trackData', data));
-  broadcastClient.on('broadcastingEvent', (data) => broadcastToWindows('acc:broadcastingEvent', data));
-  broadcastClient.on('error', (err) => broadcastToWindows('acc:error', err.message));
-  broadcastClient.on('parseError', (err) => broadcastToWindows('acc:parseError', err.message));
-  broadcastClient.on('reregistering', () => broadcastToWindows('acc:reregistering', null));
+  broadcastClient.on('connected', (data) =>
+    broadcastToWindows('acc:connected', data),
+  );
+  broadcastClient.on('registrationFailed', (msg) =>
+    broadcastToWindows('acc:registrationFailed', msg),
+  );
+  broadcastClient.on('realtimeUpdate', (data) =>
+    broadcastToWindows('acc:realtimeUpdate', data),
+  );
+  broadcastClient.on('realtimeCarUpdate', (data) =>
+    broadcastToWindows('acc:realtimeCarUpdate', data),
+  );
+  broadcastClient.on('entryList', (data) =>
+    broadcastToWindows('acc:entryList', data),
+  );
+  broadcastClient.on('entryListCar', (data) =>
+    broadcastToWindows('acc:entryListCar', data),
+  );
+  broadcastClient.on('trackData', (data) =>
+    broadcastToWindows('acc:trackData', data),
+  );
+  broadcastClient.on('broadcastingEvent', (data) =>
+    broadcastToWindows('acc:broadcastingEvent', data),
+  );
+  broadcastClient.on('error', (err) =>
+    broadcastToWindows('acc:error', err.message),
+  );
+  broadcastClient.on('parseError', (err) =>
+    broadcastToWindows('acc:parseError', err.message),
+  );
+  broadcastClient.on('reregistering', () =>
+    broadcastToWindows('acc:reregistering', null),
+  );
 
-  sharedMemoryClient.on('physics', (data) => sendToPhysicsWidgets('acc:physics', data));
-  sharedMemoryClient.on('static', (data) => sendToAllPhysicsWidgets('acc:staticTelemetry', data));
-  sharedMemoryClient.on('graphics', (data) => broadcastToWindows('acc:graphics', data));
-  sharedMemoryClient.on('error', (err) => broadcastToWindows('acc:sharedMemoryError', err.message));
+  sharedMemoryClient.on('physics', (data) =>
+    sendToPhysicsWidgets('acc:physics', data),
+  );
+  sharedMemoryClient.on('static', (data) =>
+    sendToAllPhysicsWidgets('acc:staticTelemetry', data),
+  );
+  sharedMemoryClient.on('graphics', (data) =>
+    broadcastToWindows('acc:graphics', data),
+  );
+  sharedMemoryClient.on('error', (err) =>
+    broadcastToWindows('acc:sharedMemoryError', err.message),
+  );
   sharedMemoryClient.start(16); // ~60Hz — matches frame rate, minimizes pedal/RPM trace lag
 
   ipcMain.handle('acc:reconnect', () => {
@@ -153,10 +198,11 @@ function runApp() {
       closeLockedWindows();
       for (const def of WIDGET_DEFS) {
         if (def.id === 'telemetry') continue; // already has its own window
-        if (isWidgetEnabled(def.id) && !widgetWindows.has(def.id)) createWidgetWindow(def);
+        if (isWidgetEnabled(def.id) && !widgetWindows.has(def.id))
+          createWidgetWindow(def);
       }
     } else {
-      for (const [id, win] of [...widgetWindows]) {
+      for (const [id, win] of widgetWindows) {
         if (id === 'telemetry') continue; // keeps its window across modes
         win.close();
         widgetWindows.delete(id);
@@ -235,7 +281,10 @@ function runApp() {
       widgetWindows.delete(def.id);
       // Telemetry always has its own window regardless of edit/locked mode;
       // every other individually-windowed widget only does during editing.
-      const shouldRespawn = def.id === 'telemetry' ? isWidgetEnabled(def.id) : editModeEnabled && isWidgetEnabled(def.id);
+      const shouldRespawn =
+        def.id === 'telemetry'
+          ? isWidgetEnabled(def.id)
+          : editModeEnabled && isWidgetEnabled(def.id);
       if (shouldRespawn) {
         setTimeout(() => showWidget(def.id), 1000);
       }
@@ -266,7 +315,7 @@ function runApp() {
       return {
         id: def.id,
         title: def.title,
-        enabled: isWidgetEnabled(def.id),
+        enabled: isWidgetConfigured(def.id),
         x: saved.x ?? def.x,
         y: saved.y ?? def.y,
         width: saved.width ?? def.width,
@@ -308,7 +357,9 @@ function runApp() {
         backgroundThrottling: false,
       },
     });
-    win.loadURL(`${OVERLAY_WINDOW_WEBPACK_ENTRY}?mode=locked&originX=${x}&originY=${y}&ids=${widgetIds.join(',')}`);
+    win.loadURL(
+      `${OVERLAY_WINDOW_WEBPACK_ENTRY}?mode=locked&originX=${x}&originY=${y}&ids=${widgetIds.join(',')}`,
+    );
     win.setIgnoreMouseEvents(true);
 
     let exitHandled = false;
@@ -337,14 +388,18 @@ function runApp() {
 
   const createLockedWindows = () => {
     // Telemetry always lives in its own dedicated window (see setEditMode).
-    const enabledWidgets = getWidgetListWithGeometry().filter((w) => w.enabled && w.id !== 'telemetry');
+    if (!isProfileEnabled()) return;
+    const enabledWidgets = getWidgetListWithGeometry().filter(
+      (w) => w.enabled && w.id !== 'telemetry',
+    );
     const groups = new Map(); // display.id -> { display, widgetIds }
     for (const w of enabledWidgets) {
       const display = screen.getDisplayNearestPoint({
         x: Math.round(w.x + w.width / 2),
         y: Math.round(w.y + w.height / 2),
       });
-      if (!groups.has(display.id)) groups.set(display.id, { display, widgetIds: [] });
+      if (!groups.has(display.id))
+        groups.set(display.id, { display, widgetIds: [] });
       groups.get(display.id).widgetIds.push(w.id);
     }
     for (const { display, widgetIds } of groups.values()) {
@@ -355,6 +410,8 @@ function runApp() {
   ipcMain.handle('widgets:setEnabled', (_event, id, enabled) => {
     aw()[id] = { ...aw()[id], enabled };
     schedulePersistSettings();
+    // With the profile switched off, only remember the choice.
+    if (!isProfileEnabled()) return;
 
     if (id === 'telemetry') {
       if (enabled) showWidget('telemetry');
@@ -380,8 +437,43 @@ function runApp() {
 
   ipcMain.handle('profiles:list', () => ({
     active: settings.activeProfile,
+    activeEnabled: isProfileEnabled(),
     names: Object.keys(settings.profiles),
   }));
+
+  // Rebuilds every overlay window from the active profile's current state.
+  const applyActiveProfile = () => {
+    if (editModeEnabled) {
+      for (const [id, win] of widgetWindows) {
+        if (id === 'telemetry') continue;
+        win.close();
+        widgetWindows.delete(id);
+      }
+      closeLockedWindows();
+      for (const def of WIDGET_DEFS) {
+        if (def.id === 'telemetry') continue;
+        if (isWidgetEnabled(def.id) && !widgetWindows.has(def.id))
+          createWidgetWindow(def);
+      }
+    } else {
+      closeLockedWindows();
+      createLockedWindows();
+    }
+    if (isWidgetEnabled('telemetry')) {
+      if (!widgetWindows.has('telemetry')) showWidget('telemetry');
+    } else {
+      if (widgetWindows.has('telemetry')) hideWidget('telemetry');
+    }
+  };
+
+  ipcMain.handle('profiles:setEnabled', (_e, enabled) => {
+    const p = settings.profiles[settings.activeProfile];
+    if (!p) return false;
+    p.enabled = enabled;
+    schedulePersistSettings();
+    applyActiveProfile();
+    return true;
+  });
 
   ipcMain.handle('profiles:create', (_e, name) => {
     if (settings.profiles[name]) return false;
@@ -415,26 +507,7 @@ function runApp() {
     if (!settings.profiles[name]) return false;
     settings.activeProfile = name;
     schedulePersistSettings();
-    if (editModeEnabled) {
-      for (const [id, win] of [...widgetWindows]) {
-        if (id === 'telemetry') continue;
-        win.close();
-        widgetWindows.delete(id);
-      }
-      closeLockedWindows();
-      for (const def of WIDGET_DEFS) {
-        if (def.id === 'telemetry') continue;
-        if (isWidgetEnabled(def.id) && !widgetWindows.has(def.id)) createWidgetWindow(def);
-      }
-    } else {
-      closeLockedWindows();
-      createLockedWindows();
-    }
-    if (isWidgetEnabled('telemetry')) {
-      if (!widgetWindows.has('telemetry')) showWidget('telemetry');
-    } else {
-      if (widgetWindows.has('telemetry')) hideWidget('telemetry');
-    }
+    applyActiveProfile();
     return true;
   });
 
@@ -463,7 +536,9 @@ function runApp() {
   };
 
   const createTray = () => {
-    const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+    const trayIcon = nativeImage
+      .createFromPath(iconPath)
+      .resize({ width: 16, height: 16 });
     tray = new Tray(trayIcon);
     tray.setToolTip('ACC Telemetry App');
     tray.on('click', () => {
@@ -480,15 +555,22 @@ function runApp() {
     });
     tray.on('right-click', () => {
       const menu = Menu.buildFromTemplate([
-        ...(updateDownloaded ? [
-          {
-            label: '↻ Reiniciar para instalar atualização',
-            click: () => { app.isQuitting = true; autoUpdater.quitAndInstall(); },
-          },
-          { type: 'separator' },
-        ] : []),
+        ...(updateDownloaded
+          ? [
+              {
+                label: '↻ Reiniciar para instalar atualização',
+                click: () => {
+                  app.isQuitting = true;
+                  autoUpdater.quitAndInstall();
+                },
+              },
+              { type: 'separator' },
+            ]
+          : []),
         {
-          label: mainWindow?.isVisible() ? 'Esconder janela principal' : 'Mostrar janela principal',
+          label: mainWindow?.isVisible()
+            ? 'Esconder janela principal'
+            : 'Mostrar janela principal',
           click: () => {
             if (!mainWindow) {
               createMainWindow();
@@ -501,7 +583,9 @@ function runApp() {
           },
         },
         {
-          label: editModeEnabled ? 'Desativar modo edição (F12)' : 'Ativar modo edição (F12)',
+          label: editModeEnabled
+            ? 'Desativar modo edição (F12)'
+            : 'Ativar modo edição (F12)',
           click: () => setEditMode(!editModeEnabled),
         },
         { type: 'separator' },

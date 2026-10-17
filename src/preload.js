@@ -33,7 +33,8 @@ contextBridge.exposeInMainWorld('editMode', {
 
 contextBridge.exposeInMainWorld('widgets', {
   list: () => ipcRenderer.invoke('widgets:list'),
-  setEnabled: (id, enabled) => ipcRenderer.invoke('widgets:setEnabled', id, enabled),
+  setEnabled: (id, enabled) =>
+    ipcRenderer.invoke('widgets:setEnabled', id, enabled),
   onChanged: (cb) => subscribe('widgets:changed', cb),
 });
 
@@ -49,7 +50,9 @@ contextBridge.exposeInMainWorld('app', {
 contextBridge.exposeInMainWorld('profiles', {
   list: () => ipcRenderer.invoke('profiles:list'),
   create: (name) => ipcRenderer.invoke('profiles:create', name),
-  rename: (oldName, newName) => ipcRenderer.invoke('profiles:rename', oldName, newName),
+  rename: (oldName, newName) =>
+    ipcRenderer.invoke('profiles:rename', oldName, newName),
   delete: (name) => ipcRenderer.invoke('profiles:delete', name),
   switch: (name) => ipcRenderer.invoke('profiles:switch', name),
+  setEnabled: (enabled) => ipcRenderer.invoke('profiles:setEnabled', enabled),
 });

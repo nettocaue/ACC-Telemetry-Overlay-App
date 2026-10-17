@@ -125,6 +125,18 @@ button:not(:disabled):hover {
   color: #ff5a56;
 }
 
+.btn-profile-on {
+  background: rgba(76, 208, 128, 0.12);
+  border-color: rgba(76, 208, 128, 0.4);
+  color: #4cd080;
+}
+
+.btn-profile-off {
+  background: rgba(232, 32, 28, 0.15);
+  border-color: rgba(232, 32, 28, 0.4);
+  color: #ff5a56;
+}
+
 .status-connected {
   color: #4cd080;
 }
