@@ -40,7 +40,12 @@ function runApp() {
   const closingLockedWindows = new Set();
   const broadcastClient = new AccBroadcastClient();
   const sharedMemoryClient = new AccSharedMemoryClient();
+  // `settings` is the live, possibly-unsaved state the overlays render from;
+  // `savedSettings` mirrors what's on disk. Widget toggles and geometry only
+  // touch `settings` until the user hits "Salvar" for the active profile.
   const settings = loadSettings();
+  let savedSettings = structuredClone(settings);
+  let profileDirty = false;
 
   // Returns the widgets map for the currently active profile.
   const aw = () => {
@@ -172,7 +177,31 @@ function runApp() {
   let savePositionTimeout = null;
   const schedulePersistSettings = () => {
     clearTimeout(savePositionTimeout);
-    savePositionTimeout = setTimeout(() => saveSettings(settings), 400);
+    savePositionTimeout = setTimeout(() => saveSettings(savedSettings), 400);
+  };
+
+  const setProfileDirty = (dirty) => {
+    if (profileDirty === dirty) return;
+    profileDirty = dirty;
+    mainWindow?.webContents.send('profiles:dirtyChanged', dirty);
+  };
+
+  // Applies a structural change (switch/create/rename/...) to both the live
+  // and the saved state, so it persists without committing unsaved edits.
+  const updateBothSettings = (fn) => {
+    fn(settings);
+    fn(savedSettings);
+    schedulePersistSettings();
+  };
+
+  // Throws away unsaved widget edits of the active profile.
+  const discardUnsavedProfile = () => {
+    if (!profileDirty) return;
+    const name = settings.activeProfile;
+    if (savedSettings.profiles[name]) {
+      settings.profiles[name] = structuredClone(savedSettings.profiles[name]);
+    }
+    setProfileDirty(false);
   };
 
   // Editing uses one native OS window per widget (easy to drag/resize
@@ -266,7 +295,7 @@ function runApp() {
       const [x, y] = win.getPosition();
       const [width, height] = win.getSize();
       aw()[def.id] = { ...aw()[def.id], x, y, width, height };
-      schedulePersistSettings();
+      setProfileDirty(true);
     };
     win.on('moved', persist);
     win.on('resized', persist);
@@ -409,8 +438,8 @@ function runApp() {
 
   ipcMain.handle('widgets:setEnabled', (_event, id, enabled) => {
     aw()[id] = { ...aw()[id], enabled };
-    schedulePersistSettings();
-    // With the profile switched off, only remember the choice.
+    setProfileDirty(true);
+    // With the overlay switched off, only remember the choice.
     if (!isProfileEnabled()) return;
 
     if (id === 'telemetry') {
@@ -438,8 +467,18 @@ function runApp() {
   ipcMain.handle('profiles:list', () => ({
     active: settings.activeProfile,
     activeEnabled: isProfileEnabled(),
+    dirty: profileDirty,
     names: Object.keys(settings.profiles),
   }));
+
+  ipcMain.handle('profiles:save', () => {
+    const name = settings.activeProfile;
+    savedSettings.profiles[name] = structuredClone(settings.profiles[name]);
+    savedSettings.activeProfile = name;
+    schedulePersistSettings();
+    setProfileDirty(false);
+    return true;
+  });
 
   // Rebuilds every overlay window from the active profile's current state.
   const applyActiveProfile = () => {
@@ -466,47 +505,61 @@ function runApp() {
     }
   };
 
+  // Turning the overlay on/off is a runtime switch, not a layout edit, so it
+  // persists right away without needing "Salvar".
   ipcMain.handle('profiles:setEnabled', (_e, enabled) => {
-    const p = settings.profiles[settings.activeProfile];
-    if (!p) return false;
-    p.enabled = enabled;
-    schedulePersistSettings();
+    if (!settings.profiles[settings.activeProfile]) return false;
+    updateBothSettings((s) => {
+      const p = s.profiles[s.activeProfile];
+      if (p) p.enabled = enabled;
+    });
     applyActiveProfile();
     return true;
   });
 
   ipcMain.handle('profiles:create', (_e, name) => {
     if (settings.profiles[name]) return false;
-    settings.profiles[name] = { widgets: {} };
-    settings.activeProfile = name;
-    schedulePersistSettings();
+    discardUnsavedProfile();
+    updateBothSettings((s) => {
+      s.profiles[name] = { widgets: {} };
+      s.activeProfile = name;
+    });
+    applyActiveProfile();
     return true;
   });
 
   ipcMain.handle('profiles:rename', (_e, oldName, newName) => {
     if (!settings.profiles[oldName] || settings.profiles[newName]) return false;
-    settings.profiles[newName] = settings.profiles[oldName];
-    delete settings.profiles[oldName];
-    if (settings.activeProfile === oldName) settings.activeProfile = newName;
-    schedulePersistSettings();
+    updateBothSettings((s) => {
+      if (s.profiles[oldName]) {
+        s.profiles[newName] = s.profiles[oldName];
+        delete s.profiles[oldName];
+      }
+      if (s.activeProfile === oldName) s.activeProfile = newName;
+    });
     return true;
   });
 
   ipcMain.handle('profiles:delete', (_e, name) => {
     const names = Object.keys(settings.profiles);
     if (names.length <= 1 || !settings.profiles[name]) return false;
-    delete settings.profiles[name];
-    if (settings.activeProfile === name) {
-      settings.activeProfile = Object.keys(settings.profiles)[0];
-    }
-    schedulePersistSettings();
+    if (name === settings.activeProfile) setProfileDirty(false);
+    updateBothSettings((s) => {
+      delete s.profiles[name];
+      if (s.activeProfile === name) {
+        s.activeProfile = Object.keys(s.profiles)[0];
+      }
+    });
+    applyActiveProfile();
     return true;
   });
 
   ipcMain.handle('profiles:switch', (_e, name) => {
     if (!settings.profiles[name]) return false;
-    settings.activeProfile = name;
-    schedulePersistSettings();
+    discardUnsavedProfile();
+    updateBothSettings((s) => {
+      s.activeProfile = name;
+    });
     applyActiveProfile();
     return true;
   });

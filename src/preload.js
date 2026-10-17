@@ -55,4 +55,6 @@ contextBridge.exposeInMainWorld('profiles', {
   delete: (name) => ipcRenderer.invoke('profiles:delete', name),
   switch: (name) => ipcRenderer.invoke('profiles:switch', name),
   setEnabled: (enabled) => ipcRenderer.invoke('profiles:setEnabled', enabled),
+  save: () => ipcRenderer.invoke('profiles:save'),
+  onDirtyChanged: (cb) => subscribe('profiles:dirtyChanged', cb),
 });

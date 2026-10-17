@@ -137,6 +137,12 @@ button:not(:disabled):hover {
   color: #ff5a56;
 }
 
+.btn-save-dirty {
+  background: rgba(232, 160, 28, 0.15);
+  border-color: rgba(232, 160, 28, 0.5);
+  color: #f0b040;
+}
+
 .status-connected {
   color: #4cd080;
 }

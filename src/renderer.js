@@ -16,6 +16,7 @@ function App() {
   const [profiles, setProfiles] = useState({
     active: '',
     activeEnabled: true,
+    dirty: false,
     names: [],
   });
   const [profileMode, setProfileMode] = useState(null); // null | 'new' | 'rename'
@@ -24,6 +25,9 @@ function App() {
   useEffect(() => {
     window.app.getVersion().then(setVersion);
     window.profiles.list().then(setProfiles);
+    return window.profiles.onDirtyChanged((dirty) =>
+      setProfiles((prev) => ({ ...prev, dirty })),
+    );
   }, []);
 
   useEffect(() => {
@@ -71,16 +75,21 @@ function App() {
     window.widgets.setEnabled(id, enabled);
   };
 
-  const allEnabled =
-    widgetList.length > 0 && widgetList.every((w) => w.enabled);
-  const toggleAllWidgets = () => {
-    const next = !allEnabled;
-    setWidgetList((list) => list.map((w) => ({ ...w, enabled: next })));
-    widgetList.forEach((w) => window.widgets.setEnabled(w.id, next));
+  // Leaving the active profile drops its unsaved edits, so ask first.
+  const confirmDiscardUnsaved = () =>
+    !profiles.dirty ||
+    window.confirm(
+      `O perfil "${profiles.active}" tem alterações não salvas. Descartar?`,
+    );
+
+  const saveProfile = async () => {
+    await window.profiles.save();
+    setProfiles(await window.profiles.list());
   };
 
   const switchProfile = async (name) => {
     if (name === profiles.active) return;
+    if (!confirmDiscardUnsaved()) return;
     await window.profiles.switch(name);
     const updated = await window.profiles.list();
     setProfiles(updated);
@@ -93,6 +102,7 @@ function App() {
   };
 
   const startNewProfile = () => {
+    if (!confirmDiscardUnsaved()) return;
     setProfileMode('new');
     setProfileInput('');
   };
@@ -235,13 +245,12 @@ function App() {
             h(
               'button',
               {
-                key: 'toggleProfile',
-                className: profiles.activeEnabled
-                  ? 'btn-profile-on'
-                  : 'btn-profile-off',
-                onClick: toggleProfileEnabled,
+                key: 'save',
+                className: profiles.dirty ? 'btn-save-dirty' : undefined,
+                disabled: !profiles.dirty,
+                onClick: saveProfile,
               },
-              profiles.activeEnabled ? 'Desativar perfil' : 'Ativar perfil',
+              profiles.dirty ? 'Salvar •' : 'Salvo',
             ),
             h('button', { key: 'new', onClick: startNewProfile }, 'Novo'),
             h(
@@ -266,8 +275,14 @@ function App() {
         h('h2', { key: 't' }, 'Widgets'),
         h(
           'button',
-          { key: 'toggleAll', onClick: toggleAllWidgets },
-          allEnabled ? 'Desativar todos' : 'Ativar todos',
+          {
+            key: 'toggleOverlay',
+            className: profiles.activeEnabled
+              ? 'btn-profile-on'
+              : 'btn-profile-off',
+            onClick: toggleProfileEnabled,
+          },
+          profiles.activeEnabled ? 'Desativar overlay' : 'Ativar overlay',
         ),
       ]),
       h(
