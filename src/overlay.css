@@ -239,6 +239,11 @@ body {
   opacity: 0.8;
 }
 
+.tyre-pad {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
 /* ── Telemetry HUD widget ────────────────────────────────── */
 .telemetry-hud {
   flex-direction: column;
@@ -385,12 +390,6 @@ body {
   font-weight: 700;
 }
 
-/* ── Tyre cell additions ─────────────────────────────────── */
-.tyre-wear {
-  font-size: 0.65rem;
-  opacity: 0.7;
-}
-
 /* ── Lap Timer widget ────────────────────────────────────── */
 .lap-header {
   display: flex;
@@ -476,7 +475,7 @@ body {
 }
 
 .weather-pct {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 

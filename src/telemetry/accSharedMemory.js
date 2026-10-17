@@ -220,16 +220,16 @@ function parseGraphics(buf) {
   r.wstring(15); // split
   const completedLaps = r.i32();
   const position = r.i32();
-  // ACC stores these as seconds despite the "ms" name in the Kunos PDF —
-  // multiply by 1000 so the rest of the app works in milliseconds throughout.
-  const iCurrentTime = r.f32() * 1000;
-  const iLastTime = r.f32() * 1000;
-  const iBestTime = r.f32() * 1000;
+  // Lap times are int32 milliseconds. Reading them as float (as before)
+  // reinterpreted the int bits as tiny denormals, so the timer never ran.
+  const iCurrentTime = r.i32();
+  const iLastTime = r.i32();
+  const iBestTime = r.i32();
   const sessionTimeLeft = r.f32();
   r.f32(); // distanceTraveled
   const isInPit = r.bool();
   r.i32(); // currentSectorIndex
-  r.f32(); // lastSectorTime
+  r.i32(); // lastSectorTime
   const numberOfLaps = r.i32();
   const tyreCompound = r.wstring(33, 2); // +2 padding to 4-byte boundary
   r.f32(); // replayTimeMultiplier
@@ -249,15 +249,12 @@ function parseGraphics(buf) {
   const windDirection = r.f32();
   r.i32(); // isSetupMenuVisible
   r.i32(); // mainDisplayIndex
-  r.i32(); // mirrorDisplayIndex
-  const rainIntensity = r.f32();
-  const rainIntensityIn10min = r.f32();
-  const rainIntensityIn30min = r.f32();
-  r.i32(); // currentTyreSet
-  r.f32(); // mfdTyreSet
-  r.f32(); // mfdFuelToAdd
-  r.arrF(4); // mfdTyrePressure[4]
-  const trackGripStatus = r.i32();
+  r.i32(); // secondaryDisplayIndex
+  r.i32(); // TC
+  r.i32(); // TCCut
+  r.i32(); // EngineMap
+  r.i32(); // ABS
+  r.f32(); // fuelXLap
   r.i32(); // rainLights
   r.i32(); // flashingLights
   r.i32(); // lightsStage
@@ -269,16 +266,27 @@ function parseGraphics(buf) {
   r.i32(); // sessionIndex
   const usedFuel = r.f32();
   r.wstring(15, 2); // deltaLapTime + padding
-  r.f32(); // iDeltaLapTime
+  r.i32(); // iDeltaLapTime
   r.wstring(15, 2); // estimatedLapTime + padding
-  const iEstimatedLapTime = r.f32() * 1000;
+  const iEstimatedLapTime = r.i32();
   const isDeltaPositive = r.bool();
-  r.f32(); // iSplit
+  r.i32(); // iSplit
   const isValidLap = r.bool();
   const fuelEstimatedLaps = r.f32();
   r.wstring(33, 2); // trackStatus + padding
-  r.f32(); // missingMandatoryPits
+  r.i32(); // missingMandatoryPits
   const clock = r.f32();
+  r.i32(); // directionLightsLeft
+  r.i32(); // directionLightsRight
+  for (let i = 0; i < 8; i++) r.i32(); // GlobalYellow/1/2/3, White, Green, Chequered, Red
+  r.i32(); // mfdTyreSet
+  r.f32(); // mfdFuelToAdd
+  r.arrF(4); // mfdTyrePressure LF/RF/LR/RR
+  const trackGripStatus = r.i32(); // ACC_TRACK_GRIP_STATUS enum
+  // ACC_RAIN_INTENSITY enum: 0 none, 1 drizzle, 2 light, 3 medium, 4 heavy, 5 thunderstorm
+  const rainIntensity = r.i32();
+  const rainIntensityIn10min = r.i32();
+  const rainIntensityIn30min = r.i32();
 
   return {
     packetId,
@@ -353,7 +361,7 @@ export class AccSharedMemoryClient extends EventEmitter {
     super();
     this.physics = new SharedSection('Local\\acpmf_physics', 800);
     this.staticSection = new SharedSection('Local\\acpmf_static', 784);
-    this.graphicsSection = new SharedSection('Local\\acpmf_graphics', 1516);
+    this.graphicsSection = new SharedSection('Local\\acpmf_graphics', 1588);
     this.lastGraphicsPacketId = null;
     this.timer = null;
     this.lastPacketId = null;

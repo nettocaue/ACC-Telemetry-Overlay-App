@@ -72,6 +72,11 @@ body {
   margin: 0;
 }
 
+.header-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .form {
   display: grid;
   gap: 0.75rem;

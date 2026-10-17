@@ -18,7 +18,7 @@ export const WIDGET_DEFS = [
   {
     id: 'standings',
     title: 'Classificação',
-    width: 360,
+    width: 420,
     height: 340,
     x: 700,
     y: 40,
@@ -39,7 +39,7 @@ export const WIDGET_DEFS = [
     x: 40,
     y: 480,
   },
-  { id: 'tyres', title: 'Pneus', width: 300, height: 230, x: 360, y: 220 },
+  { id: 'tyres', title: 'Pneus', width: 300, height: 250, x: 360, y: 220 },
   { id: 'fuel', title: 'Combustível', width: 300, height: 200, x: 700, y: 220 },
   {
     id: 'weather',

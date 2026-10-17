@@ -45,7 +45,8 @@ function useGraphics() {
 }
 
 function formatMs(ms) {
-  if (!ms || ms < 1000) return '--:--.---'; // < 1 s = shared memory not yet populated
+  // ACC reports INT_MAX for laps that don't exist yet (no last/best lap).
+  if (ms == null || ms <= 0 || ms >= 2147483647) return '--:--.---';
   const totalSecs = Math.floor(ms / 1000);
   const mins = Math.floor(totalSecs / 60);
   const secs = totalSecs % 60;
@@ -60,19 +61,26 @@ function tyreTempColor(temp) {
   return '#e82020';
 }
 
-function rainLabel(intensity) {
-  if (intensity < 0.05) return 'Sol';
-  if (intensity < 0.25) return 'Nublado';
-  if (intensity < 0.6) return 'Chuva';
-  return 'Temporal';
-}
+// ACC_RAIN_INTENSITY enum, indexed by value.
+const RAIN_LABELS = [
+  'Seco',
+  'Garoa',
+  'Chuva fraca',
+  'Chuva média',
+  'Chuva forte',
+  'Tempestade',
+];
+const RAIN_COLORS = [
+  '#f0c000',
+  '#aaaaaa',
+  '#66aaff',
+  '#4499ff',
+  '#2266cc',
+  '#8844ff',
+];
 
-function rainColor(intensity) {
-  if (intensity < 0.05) return '#f0c000';
-  if (intensity < 0.25) return '#aaaaaa';
-  if (intensity < 0.6) return '#4499ff';
-  return '#2266cc';
-}
+const rainLabel = (intensity) => RAIN_LABELS[intensity] ?? '—';
+const rainColor = (intensity) => RAIN_COLORS[intensity] ?? '#f2f2f2';
 
 function useAllCars() {
   const [cars, setCars] = useState({});
@@ -182,11 +190,10 @@ function StandingsWidget() {
   const renderRow = (car) => {
     const entry = entries[car.carIndex];
     const driver = entry?.drivers?.[entry.currentDriverIndex];
-    const name =
-      driver?.shortName ||
-      (driver
-        ? `${driver.firstName?.[0] ?? ''}. ${driver.lastName ?? ''}`
-        : '—');
+    const fullName = driver
+      ? `${driver.firstName ?? ''} ${driver.lastName ?? ''}`.trim()
+      : '';
+    const name = fullName || driver?.shortName || '—';
     const isFocused = car.carIndex === focusedIdx;
     const gap = car.position === 1 ? '—' : formatGap(car.delta);
     return h(
@@ -457,8 +464,10 @@ function TyresWidget() {
       WHEEL_LABELS.map((label, i) => {
         const temp = physics.tyreCoreTemp[i];
         const press = (physics.wheelPressure[i] * 6.895).toFixed(0);
-        const wear =
-          physics.tyreWear[i] != null ? physics.tyreWear[i].toFixed(0) : '--';
+        const pad =
+          physics.padLife?.[i] > 0
+            ? `${physics.padLife[i].toFixed(1)} mm`
+            : '--';
         const color = tyreTempColor(temp);
         return h('div', { key: label, className: 'tyre-cell' }, [
           h(
@@ -476,7 +485,9 @@ function TyresWidget() {
             { key: 'press', className: 'tyre-pressure' },
             `${press} kPa`,
           ),
-          h('div', { key: 'wear', className: 'tyre-wear' }, `${wear}%`),
+          // ACC doesn't expose tyre wear, but it does report brake pad
+          // thickness in mm (a new pad starts around 29 mm).
+          h('div', { key: 'pad', className: 'tyre-pad' }, `Pastilha ${pad}`),
         ]);
       }),
     ),
@@ -560,7 +571,7 @@ function LapTimerWidget() {
   const laps = graphics?.completedLaps ?? 0;
 
   // Only color-code when there's a valid current time to compare
-  const hasCurrentTime = graphics?.iCurrentTime >= 1000;
+  const hasCurrentTime = graphics?.iCurrentTime > 0;
   const curColor = hasCurrentTime
     ? graphics?.isDeltaPositive
       ? '#f0c000'
@@ -646,17 +657,12 @@ function WeatherWidget() {
         h('div', { key: s.label, className: 'weather-slot' }, [
           h(
             'div',
-            { key: 'lbl2', className: 'weather-slot-label' },
-            rainLabel(s.val),
-          ),
-          h(
-            'div',
             {
-              key: 'pct',
+              key: 'rain',
               className: 'weather-pct',
               style: { color: rainColor(s.val) },
             },
-            `${Math.round(s.val * 100)}%`,
+            rainLabel(s.val),
           ),
           h('div', { key: 'lbl', className: 'weather-slot-label' }, s.label),
         ]),

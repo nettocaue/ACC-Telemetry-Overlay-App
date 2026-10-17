@@ -189,15 +189,6 @@ function App() {
           { key: 'reconnect', onClick: handleReconnect },
           'Reconectar',
         ),
-        h(
-          'button',
-          {
-            key: 'editMode',
-            className: 'btn-edit-mode',
-            onClick: () => window.editMode.toggle(),
-          },
-          `Modo edição: ${editMode ? 'LIGADO' : 'DESLIGADO'}`,
-        ),
       ]),
     ]),
 
@@ -273,17 +264,28 @@ function App() {
     h('section', { key: 'widgets', className: 'panel' }, [
       h('div', { key: 'widgetsHeader', className: 'panel-header-row' }, [
         h('h2', { key: 't' }, 'Widgets'),
-        h(
-          'button',
-          {
-            key: 'toggleOverlay',
-            className: profiles.activeEnabled
-              ? 'btn-profile-on'
-              : 'btn-profile-off',
-            onClick: toggleProfileEnabled,
-          },
-          profiles.activeEnabled ? 'Desativar overlay' : 'Ativar overlay',
-        ),
+        h('div', { key: 'buttons', className: 'header-buttons' }, [
+          h(
+            'button',
+            {
+              key: 'editMode',
+              className: 'btn-edit-mode',
+              onClick: () => window.editMode.toggle(),
+            },
+            `Modo edição: ${editMode ? 'LIGADO' : 'DESLIGADO'}`,
+          ),
+          h(
+            'button',
+            {
+              key: 'toggleOverlay',
+              className: profiles.activeEnabled
+                ? 'btn-profile-on'
+                : 'btn-profile-off',
+              onClick: toggleProfileEnabled,
+            },
+            profiles.activeEnabled ? 'Desativar overlay' : 'Ativar overlay',
+          ),
+        ]),
       ]),
       h(
         'div',
