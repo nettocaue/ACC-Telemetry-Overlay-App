@@ -120,7 +120,14 @@ export class PhoneController extends EventEmitter {
       shiftDown: BUTTON.SHIFT_DOWN,
       ...SHORTCUT_BUTTONS,
     };
-    const valid = ['steer', 'gas', 'brake', ...Object.keys(pulses)];
+    const valid = [
+      'steer',
+      'steerLeft',
+      'steerRight',
+      'gas',
+      'brake',
+      ...Object.keys(pulses),
+    ];
     if (!valid.includes(target)) return;
     this.lastInputAt = Date.now();
     this._neutral();
@@ -193,6 +200,12 @@ export class PhoneController extends EventEmitter {
       if (this.binding.target === 'steer') {
         // centre → full right → full left → centre
         this.device.setAxis(AXIS.X, 0.5 + 0.5 * Math.sin(t * 2 * Math.PI));
+      } else if (this.binding.target === 'steerLeft') {
+        // One side only, for games that bind left and right separately
+        // (AMS2, Project CARS): centre → full left → centre.
+        this.device.setAxis(AXIS.X, 0.5 - 0.5 * wave);
+      } else if (this.binding.target === 'steerRight') {
+        this.device.setAxis(AXIS.X, 0.5 + 0.5 * wave);
       } else {
         this.device.setAxis(this.binding.target === 'gas' ? AXIS.Y : AXIS.Z, wave);
       }
