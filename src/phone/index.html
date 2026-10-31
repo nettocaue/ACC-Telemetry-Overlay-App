@@ -165,10 +165,38 @@
 
         <div class="wheel-center">
           <div class="wheel-status" id="wheel-status"></div>
-          <div class="wheel-readout">
-            <div class="wheel-gear" id="wheel-gear">N</div>
-            <div class="wheel-speed">
-              <span id="wheel-speed">0</span><span class="unit">km/h</span>
+          <div class="wheel-main">
+            <div class="shortcuts" id="shortcuts-left">
+              <div class="shortcut-pair">
+                <span class="shortcut-value" id="sc-tc">TC -</span>
+                <button class="shortcut" data-button="tcDown">TC −</button>
+                <button class="shortcut" data-button="tcUp">TC +</button>
+              </div>
+              <div class="shortcut-pair">
+                <span class="shortcut-value" id="sc-abs">ABS -</span>
+                <button class="shortcut" data-button="absDown">ABS −</button>
+                <button class="shortcut" data-button="absUp">ABS +</button>
+              </div>
+            </div>
+            <div class="wheel-readout">
+              <div class="wheel-gear" id="wheel-gear">N</div>
+              <div class="wheel-speed">
+                <span id="wheel-speed">0</span><span class="unit">km/h</span>
+              </div>
+            </div>
+            <div class="shortcuts" id="shortcuts-right">
+              <button class="shortcut" data-button="pitLimiter" id="sc-pit">
+                PIT LIMITER
+              </button>
+              <button class="shortcut" data-button="ignition" id="sc-ignition">
+                IGNIÇÃO
+              </button>
+              <button class="shortcut" data-button="starter" id="sc-starter">
+                PARTIDA
+              </button>
+              <button class="shortcut" data-button="flash" id="sc-flash">
+                FAROL
+              </button>
             </div>
           </div>
           <div class="steer-meter">
@@ -228,6 +256,19 @@
                 <button class="ghost-btn" data-bind="shiftDown">
                   Reduzir marcha
                 </button>
+              </div>
+              <h3>Mapear atalhos</h3>
+              <div class="bind-buttons">
+                <button class="ghost-btn" data-bind="tcUp">TC +</button>
+                <button class="ghost-btn" data-bind="tcDown">TC −</button>
+                <button class="ghost-btn" data-bind="absUp">ABS +</button>
+                <button class="ghost-btn" data-bind="absDown">ABS −</button>
+                <button class="ghost-btn" data-bind="pitLimiter">
+                  Pit limiter
+                </button>
+                <button class="ghost-btn" data-bind="ignition">Ignição</button>
+                <button class="ghost-btn" data-bind="starter">Partida</button>
+                <button class="ghost-btn" data-bind="flash">Piscar farol</button>
               </div>
               <button class="ghost-btn reset-btn" id="settings-reset">
                 Restaurar padrões

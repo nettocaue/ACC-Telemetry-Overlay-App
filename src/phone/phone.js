@@ -224,6 +224,13 @@
     setText(wheelGear, t.gear < 0 ? 'R' : t.gear === 0 ? 'N' : String(t.gear));
     setClass(wheelGear, 'limiter', t.pitLimiter);
     setText($('wheel-speed'), String(t.speed));
+    // Shortcut state shown on the buttons themselves.
+    setText($('sc-tc'), t.tc == null ? 'TC -' : `TC ${t.tc}`);
+    setText($('sc-abs'), t.abs == null ? 'ABS -' : `ABS ${t.abs}`);
+    setClass($('sc-pit'), 'is-on-blue', t.pitLimiter);
+    setClass($('sc-ignition'), 'is-on', t.ignition);
+    setClass($('sc-starter'), 'is-on', t.engineRunning);
+    setClass($('sc-flash'), 'is-on', t.flashing);
     setText($('position'), t.position > 0 ? `P${t.position}` : 'P-');
 
     // Delta / laps
@@ -421,17 +428,18 @@
       help: 'Encostar o dedo de leve não acelera nem freia.',
     },
     {
-      key: 'shiftThreshold',
-      label: 'Força do gesto de troca',
-      min: 120,
-      max: 600,
-      step: 10,
-      def: 260,
-      fmt: (v) => `${v}°/s`,
-      help: 'Maior = precisa de um tranco mais forte para trocar marcha.',
+      key: 'shiftTilt',
+      label: 'Inclinação para trocar marcha',
+      min: 8,
+      max: 40,
+      step: 1,
+      def: 15,
+      fmt: (v) => `${v}°`,
+      help: 'Quanto inclinar o topo do celular para frente/trás para trocar. Menor = mais fácil.',
     },
   ];
   const TOGGLES = [
+    { key: 'shortcuts', label: 'Mostrar atalhos (TC, ABS, pit…)', def: true },
     { key: 'gestureShift', label: 'Trocar marcha com tranco', def: true },
     { key: 'invertShift', label: 'Inverter direção do tranco', def: false },
     { key: 'invertSteer', label: 'Inverter volante', def: false },
@@ -502,6 +510,7 @@
       input.addEventListener('change', () => {
         settings[def.key] = input.checked;
         saveSettings();
+        applyShortcutVisibility();
       });
       row.append(name, input);
       toggleBox.appendChild(row);
@@ -522,13 +531,14 @@
     settings = { ...defaults, centerOffset: centre };
     saveSettings();
     buildSettingsUi();
+    applyShortcutVisibility();
   });
 
   // --- Steering from motion sensors ---------------------------------------------
 
   // iOS reports accelerationIncludingGravity with the opposite sign.
   const SENSOR_SIGN = /iPad|iPhone|iPod/.test(navigator.userAgent) ? -1 : 1;
-  const gravity = { x: 0, y: 0, ok: false };
+  const gravity = { x: 0, y: 0, z: 0, ok: false };
   let rawAngle = 0; // degrees, right = positive, before centring
   let lastMotionAt = 0;
 
@@ -537,7 +547,10 @@
     return (((a % 360) + 360) % 360) * (Math.PI / 180);
   }
 
-  let shiftArmed = true;
+  // Gear-shift gesture state: tipping the phone's top edge away from you
+  // (forward) or towards you. Measured from the gravity vector, so it works
+  // on phones without a gyroscope too.
+  const pitchState = { pitch: 0, baseline: null, armed: true, anchor: 0, firedAt: 0 };
   let lastShiftAt = 0;
 
   function onMotion(event) {
@@ -549,6 +562,9 @@
     const k = gravity.ok ? 1 - settings.smoothing : 1;
     gravity.x += (g.x * SENSOR_SIGN - gravity.x) * k;
     gravity.y += (g.y * SENSOR_SIGN - gravity.y) * k;
+    gravity.z = gravity.ok
+      ? gravity.z + ((g.z ?? 0) * SENSOR_SIGN - gravity.z) * 0.5
+      : (g.z ?? 0) * SENSOR_SIGN;
     gravity.ok = true;
 
     // Express "up" in screen coordinates for the current screen rotation.
@@ -561,24 +577,51 @@
       rawAngle = -Math.atan2(sx, sy) * (180 / Math.PI);
     }
 
-    // Gear-shift gesture: a quick tip of the phone's top edge away from /
-    // towards you, i.e. rotation about the screen's horizontal axis.
-    const r = event.rotationRate;
-    if (!settings.gestureShift || !r || r.beta == null || !driving) return;
-    const rate = r.beta * Math.cos(th) - r.gamma * Math.sin(th);
-    const now = performance.now();
-    const threshold = settings.shiftThreshold;
-    // One tranco = one shift: re-arm only once the phone has settled.
-    if (!shiftArmed) {
-      if (Math.abs(rate) < threshold * 0.4) shiftArmed = true;
+    // Pitch: how far the screen faces up (top edge tipped away from you,
+    // positive) or down, relative to holding it straight up like a wheel.
+    // Independent of the in-screen rotation used for steering.
+    const inPlane = Math.hypot(sx, sy);
+    const ps = pitchState;
+    ps.pitch = Math.atan2(gravity.z, inPlane) * (180 / Math.PI);
+    if (!settings.gestureShift || !driving) {
+      ps.baseline = null;
       return;
     }
-    if (Math.abs(rate) > threshold && now - lastShiftAt > 350) {
-      shiftArmed = false;
-      // Top edge tipping away from you (forward) = negative rate = shift up.
-      let dir = rate < 0 ? 1 : -1;
-      if (settings.invertShift) dir = -dir;
-      shift(dir);
+    detectShiftGesture(performance.now());
+  }
+
+  function detectShiftGesture(now) {
+    const ps = pitchState;
+    const threshold = settings.shiftTilt;
+    if (ps.baseline === null) {
+      ps.baseline = ps.pitch;
+      ps.armed = true;
+    }
+    const delta = ps.pitch - ps.baseline;
+
+    if (ps.armed) {
+      if (Math.abs(delta) > threshold && now - lastShiftAt > 300) {
+        // Forward (screen tipping up) = shift up.
+        let dir = delta > 0 ? 1 : -1;
+        if (settings.invertShift) dir = -dir;
+        shift(dir);
+        ps.armed = false;
+        ps.anchor = ps.baseline;
+        ps.firedAt = now;
+        return;
+      }
+      // Slowly follow the way the user naturally holds the phone, so a
+      // gradual change of posture never counts as a gesture.
+      ps.baseline += delta * 0.02;
+      return;
+    }
+
+    // One tilt = one shift: wait until the phone is back near where it
+    // was before the gesture (or the user has settled into a new posture).
+    const back = Math.abs(ps.pitch - ps.anchor) < threshold * 0.45;
+    if (back || now - ps.firedAt > 2500) {
+      ps.armed = true;
+      ps.baseline = ps.pitch;
     }
   }
 
@@ -662,6 +705,35 @@
   $('paddle-up').addEventListener('pointerdown', () => shift(1));
   $('paddle-down').addEventListener('pointerdown', () => shift(-1));
 
+  // --- Shortcut buttons (held while the finger is down) -----------------
+
+  document.querySelectorAll('.shortcut').forEach((btn) => {
+    const id = btn.dataset.button;
+    let pointerId = null;
+    const press = (e) => {
+      if (!driving || pointerId !== null) return;
+      pointerId = e.pointerId;
+      btn.setPointerCapture(e.pointerId);
+      btn.classList.add('is-down');
+      send({ type: 'button', id, pressed: true });
+      if (settings.vibrate && navigator.vibrate) navigator.vibrate(12);
+    };
+    const release = (e) => {
+      if (pointerId === null || (e && e.pointerId !== pointerId)) return;
+      pointerId = null;
+      btn.classList.remove('is-down');
+      send({ type: 'button', id, pressed: false });
+    };
+    btn.addEventListener('pointerdown', press);
+    btn.addEventListener('pointerup', release);
+    btn.addEventListener('pointercancel', release);
+    btn.addEventListener('lostpointercapture', () => release());
+  });
+
+  function applyShortcutVisibility() {
+    dashEl.classList.toggle('no-shortcuts', !settings.shortcuts);
+  }
+
   // --- Binding helper ------------------------------------------------------------------
 
   document.querySelectorAll('[data-bind]').forEach((btn) => {
@@ -692,6 +764,13 @@
       cls += ' error';
     } else if (controller.busy) {
       text = 'Outro celular está pilotando';
+      cls += ' warn';
+    } else if (
+      settings.shortcuts &&
+      controller.buttonCount > 0 &&
+      controller.buttonCount < 10
+    ) {
+      text = `Os atalhos precisam de 10 botões no vJoy (hoje: ${controller.buttonCount}). Ajuste no "Configure vJoy".`;
       cls += ' warn';
     } else if (driving && !sensorsOk) {
       text = 'Sensores de movimento não estão respondendo';
@@ -780,6 +859,7 @@
     requestAnimationFrame(wheelFrame);
   }
 
+  applyShortcutVisibility();
   connect();
   try {
     setView(localStorage.getItem(VIEW_KEY) || 'dash');

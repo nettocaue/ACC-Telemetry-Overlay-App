@@ -154,8 +154,8 @@ function parsePhysics(buf) {
   r.i32(); // rearBrakeCompound
   const padLife = r.arrF(4);
   const discLife = r.arrF(4);
-  r.i32(); // ignitionOn
-  r.i32(); // starterEngineOn
+  const ignitionOn = r.bool();
+  const starterEngineOn = r.bool();
   const isEngineRunning = r.bool();
 
   return {
@@ -187,6 +187,8 @@ function parsePhysics(buf) {
     waterTemp,
     isEngineRunning,
     pitLimiterOn,
+    ignitionOn,
+    starterEngineOn,
     finalFF,
     tcInAction,
     absInAction,
@@ -254,13 +256,13 @@ function parseGraphics(buf) {
   r.i32(); // isSetupMenuVisible
   r.i32(); // mainDisplayIndex
   r.i32(); // secondaryDisplayIndex
-  r.i32(); // TC
-  r.i32(); // TCCut
-  r.i32(); // EngineMap
-  r.i32(); // ABS
+  const tc = r.i32();
+  const tcCut = r.i32();
+  const engineMap = r.i32();
+  const abs = r.i32();
   r.f32(); // fuelXLap
   r.i32(); // rainLights
-  r.i32(); // flashingLights
+  const flashingLights = r.bool();
   r.i32(); // lightsStage
   r.f32(); // exhaustTemperature
   r.i32(); // wiperLV
@@ -311,6 +313,11 @@ function parseGraphics(buf) {
     rainIntensityIn30min,
     trackGripStatus,
     usedFuel,
+    tc,
+    tcCut,
+    engineMap,
+    abs,
+    flashingLights,
     iDeltaLapTime,
     iEstimatedLapTime,
     isDeltaPositive,

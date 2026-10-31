@@ -210,6 +210,9 @@ function runApp() {
   remoteServer.on('input', (id, input) => phoneController.handleInput(id, input));
   remoteServer.on('shift', (id, dir) => phoneController.handleShift(id, dir));
   remoteServer.on('bind', (id, target) => phoneController.handleBind(id, target));
+  remoteServer.on('button', (id, button, pressed) =>
+    phoneController.handleButton(id, button, pressed),
+  );
   remoteServer.on('clientGone', (id) => phoneController.clientGone(id));
   phoneController.on('status', (state) => {
     remoteServer.setControllerState(state);

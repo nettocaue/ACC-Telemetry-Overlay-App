@@ -270,6 +270,9 @@ export class RemoteServer extends EventEmitter {
       case 'shift':
         this.emit('shift', client.id, Number(msg.dir));
         break;
+      case 'button':
+        this.emit('button', client.id, String(msg.id), Boolean(msg.pressed));
+        break;
       case 'bind':
         this.emit('bind', client.id, String(msg.target));
         break;
@@ -285,12 +288,14 @@ export class RemoteServer extends EventEmitter {
   }
 
   _controllerMessage(client) {
-    const { enabled, ready, error, ownerId } = this.controllerState;
+    const { enabled, ready, error, ownerId, buttonCount } =
+      this.controllerState;
     return JSON.stringify({
       type: 'controller',
       enabled,
       ready,
       error,
+      buttonCount: buttonCount ?? 0,
       // Another phone is currently driving.
       busy: ownerId !== null && ownerId !== client.id,
     });
@@ -326,6 +331,11 @@ export class RemoteServer extends EventEmitter {
       clutch: p?.clutch ?? 0,
       ffb: p?.finalFF ?? 0,
       pitLimiter: Boolean(p?.pitLimiterOn),
+      ignition: Boolean(p?.ignitionOn),
+      engineRunning: Boolean(p?.isEngineRunning),
+      tc: g?.tc ?? null,
+      abs: g?.abs ?? null,
+      flashing: Boolean(g?.flashingLights),
       tcActive: Boolean(p?.tcInAction),
       absActive: Boolean(p?.absInAction),
       fuel: p?.fuel ?? 0,

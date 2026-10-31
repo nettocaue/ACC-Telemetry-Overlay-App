@@ -71,6 +71,7 @@ export class VJoyDevice {
     this.apiOverride = apiOverride; // for tests
     this.api = null;
     this.acquired = false;
+    this.buttonCount = 0;
     this.lastAxis = new Map();
   }
 
@@ -103,7 +104,8 @@ export class VJoyDevice {
         `Ative os eixos ${missing.join(', ')} no dispositivo vJoy ${id} (Configure vJoy).`,
       );
     }
-    if (a.GetVJDButtonNumber(id) < 2) {
+    const buttonCount = a.GetVJDButtonNumber(id);
+    if (buttonCount < 2) {
       throw new Error(
         `O dispositivo vJoy ${id} precisa de pelo menos 2 botões (Configure vJoy).`,
       );
@@ -116,6 +118,7 @@ export class VJoyDevice {
     }
     this.api = a;
     this.acquired = true;
+    this.buttonCount = buttonCount;
     this.lastAxis.clear();
     a.ResetVJD(id);
   }

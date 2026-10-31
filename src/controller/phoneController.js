@@ -15,6 +15,21 @@ const WATCHDOG_MS = 50;
 
 export const BUTTON = { SHIFT_UP: 1, SHIFT_DOWN: 2 };
 
+// Shortcut buttons on the phone → vJoy button numbers. The user binds each
+// one once in ACC's Controls screen. Held for as long as the finger is down
+// (the starter, for one, has to be held until the engine catches).
+export const SHORTCUT_BUTTONS = {
+  tcUp: 3,
+  tcDown: 4,
+  absUp: 5,
+  absDown: 6,
+  pitLimiter: 7,
+  ignition: 8,
+  starter: 9,
+  flash: 10,
+};
+export const BUTTONS_NEEDED = Math.max(...Object.values(SHORTCUT_BUTTONS));
+
 const clamp = (v, min, max) =>
   Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : 0;
 
@@ -38,6 +53,7 @@ export class PhoneController extends EventEmitter {
       ready: this.enabled && this.error === null,
       error: this.error,
       ownerId: this.ownerId,
+      buttonCount: this.device.buttonCount ?? 0,
     };
   }
 
@@ -86,17 +102,29 @@ export class PhoneController extends EventEmitter {
     this._pulse(dir > 0 ? BUTTON.SHIFT_UP : BUTTON.SHIFT_DOWN);
   }
 
+  handleButton(clientId, id, pressed) {
+    const button = SHORTCUT_BUTTONS[id];
+    if (!button || !this._canDrive(clientId) || this.binding) return;
+    this.lastInputAt = Date.now();
+    if (pressed) this.released = false;
+    this.device.setButton(button, pressed);
+  }
+
   // Moves one control on its own so the game's "press/move the control"
   // binding screen picks the right axis — moving the phone would wiggle
   // steering and pedals together.
   handleBind(clientId, target) {
     if (!this._canDrive(clientId)) return;
-    const valid = ['steer', 'gas', 'brake', 'shiftUp', 'shiftDown'];
+    const pulses = {
+      shiftUp: BUTTON.SHIFT_UP,
+      shiftDown: BUTTON.SHIFT_DOWN,
+      ...SHORTCUT_BUTTONS,
+    };
+    const valid = ['steer', 'gas', 'brake', ...Object.keys(pulses)];
     if (!valid.includes(target)) return;
     this.lastInputAt = Date.now();
     this._neutral();
-    if (target === 'shiftUp') return this._pulse(BUTTON.SHIFT_UP, 250);
-    if (target === 'shiftDown') return this._pulse(BUTTON.SHIFT_DOWN, 250);
+    if (pulses[target]) return this._pulse(pulses[target], 250);
     this.binding = { target, startedAt: Date.now() };
     this._emitStatus();
   }
@@ -141,6 +169,11 @@ export class PhoneController extends EventEmitter {
     this.device.setAxis(AXIS.Z, 0);
     this.device.setButton(BUTTON.SHIFT_UP, false);
     this.device.setButton(BUTTON.SHIFT_DOWN, false);
+    for (const button of Object.values(SHORTCUT_BUTTONS)) {
+      if (button <= (this.device.buttonCount ?? 0)) {
+        this.device.setButton(button, false);
+      }
+    }
     this.released = true;
   }
 

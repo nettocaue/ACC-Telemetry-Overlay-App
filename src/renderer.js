@@ -56,7 +56,7 @@ function ControllerSection({ controller, onToggle }) {
         h(
           'li',
           { key: 2 },
-          'Abra o "Configure vJoy": o dispositivo 1 precisa dos eixos X, Y e Z e de pelo menos 2 botões (normalmente o padrão já vem assim).',
+          'Abra o "Configure vJoy": no dispositivo 1, deixe os eixos X, Y e Z ativados e coloque 10 botões (2 para a troca de marcha e 8 para os atalhos: TC, ABS, pit limiter, ignição, partida e farol).',
         ),
         h(
           'li',
@@ -66,7 +66,7 @@ function ControllerSection({ controller, onToggle }) {
         h(
           'li',
           { key: 4 },
-          'No ACC, em Opções → Controles, clique em cada comando (volante, acelerador, freio, subir/reduzir marcha) e use os botões de "Mapear no ACC" nos Ajustes do celular.',
+          'No ACC, em Opções → Controles, clique em cada comando (volante, acelerador, freio, marchas e os atalhos) e toque no botão correspondente em Ajustes → "Mapear no ACC" / "Mapear atalhos", no celular.',
         ),
       ]),
   ]);

@@ -701,7 +701,7 @@ body {
 }
 
 .wheel-gear {
-  font-size: 30vh;
+  font-size: 26vh;
   font-weight: 900;
   line-height: 0.9;
   font-variant-numeric: tabular-nums;
@@ -966,4 +966,65 @@ body {
 
 .wheel-start .start-note.error {
   color: #ff6b6b;
+}
+
+/* --- Shortcut buttons ------------------------------------------------------ */
+
+.wheel-main {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1.5vw;
+}
+
+.dash.no-shortcuts .shortcuts {
+  visibility: hidden;
+}
+
+.shortcuts {
+  display: grid;
+  gap: 1vh;
+}
+
+.shortcut-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8vh 0.6vw;
+}
+
+.shortcut-value {
+  grid-column: 1 / span 2;
+  text-align: center;
+  font-size: 2.4vh;
+  font-weight: 800;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.shortcut {
+  background: #1a1f28;
+  border: 1px solid var(--card-border);
+  border-radius: 1.4vh;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 2.4vh;
+  padding: 2.4vh 0.6vw;
+  touch-action: none;
+  white-space: nowrap;
+}
+
+.shortcut.is-down {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.shortcut.is-on {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.shortcut.is-on-blue {
+  border-color: var(--blue);
+  color: #8fbcff;
 }
