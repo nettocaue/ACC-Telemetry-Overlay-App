@@ -299,6 +299,11 @@ export class RemoteServer extends EventEmitter {
           steer: Number(msg.steer),
           gas: Number(msg.gas),
           brake: Number(msg.brake),
+          ...Object.fromEntries(
+            ['ly', 'rx', 'ry']
+              .filter((k) => msg[k] !== undefined)
+              .map((k) => [k, Number(msg[k])]),
+          ),
         });
         break;
       case 'shift':

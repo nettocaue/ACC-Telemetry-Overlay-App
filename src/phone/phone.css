@@ -1041,117 +1041,250 @@ body {
 /* --- Controller (on-screen gamepad) ---------------------------------------- */
 
 .view-pad {
-  display: grid;
-  grid-template-columns: 30vw 1fr 30vw;
-  gap: 2vw;
   position: relative;
+  min-height: 0;
+  --stick: min(24vw, 46vh);
+  --pad-key: min(5vw, 9.6vh);
+  --side: 34vw;
 }
 
-.pad-side {
+.pad-btn {
+  background: #141a28;
+  border: 1.5px solid rgba(61, 139, 255, 0.55);
+  color: #cfe0ff;
+  font-weight: 800;
+  border-radius: 1.4vh;
+  touch-action: none;
+  box-shadow: 0 0 1.6vh rgba(61, 139, 255, 0.18) inset;
+}
+
+.pad-btn.is-down {
+  background: var(--blue);
+  color: #fff;
+}
+
+.pad-shoulders {
+  position: absolute;
+  top: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.6vh;
-  min-height: 0;
+  gap: 1.2vh;
+  width: 13vw;
 }
 
-.bumper {
-  width: 100%;
+.pad-shoulders-left {
+  left: 0;
+}
+
+.pad-shoulders-right {
+  right: 0;
+}
+
+.pad-shoulder {
+  height: 8vh;
+  font-size: 3vh;
 }
 
 .stick {
-  flex: 1;
-  position: relative;
+  position: absolute;
+  bottom: 4.5vh;
+  width: var(--stick);
+  height: var(--stick);
   touch-action: none;
-  min-height: 0;
+}
+
+.stick-left {
+  left: 1vw;
+}
+
+.stick-right {
+  right: 1vw;
 }
 
 .stick-ring {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: min(26vw, 52vh);
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%);
+  inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, #1a1f28 0%, var(--card) 70%);
-  border: 1px solid var(--card-border);
+  background: radial-gradient(circle, #1a2233 0%, #10141d 70%);
+  border: 1.5px solid rgba(61, 139, 255, 0.55);
 }
 
 .stick.is-pressed .stick-ring {
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--blue);
 }
 
 .stick-knob {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(11vw, 22vh);
-  aspect-ratio: 1;
+  width: 40%;
+  height: 40%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #ff8a4d, var(--accent) 60%);
+  background: radial-gradient(circle at 40% 35%, #6aa8ff, var(--blue) 65%);
   box-shadow: 0 1vh 3vh rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
 
 .stick-label {
   position: absolute;
-  bottom: 0;
+  bottom: -3.4vh;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 2.2vh;
+  font-size: 2vh;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--muted);
   pointer-events: none;
 }
 
+.dpad,
+.face {
+  position: absolute;
+  top: 9vh;
+  width: calc(var(--pad-key) * 3);
+  height: calc(var(--pad-key) * 3);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0.4vh;
+}
+
+.dpad {
+  left: calc(var(--side) - var(--pad-key) * 3 - 0.5vw);
+}
+
+.face {
+  right: calc(var(--side) - var(--pad-key) * 3 - 0.5vw);
+}
+
+.dpad .pad-btn {
+  font-size: 2.4vh;
+  border-radius: 1vh;
+}
+
+.dpad-up,
+.face-y {
+  grid-area: 1 / 2;
+}
+
+.dpad-left,
+.face-x {
+  grid-area: 2 / 1;
+}
+
+.dpad-right,
+.face-b {
+  grid-area: 2 / 3;
+}
+
+.dpad-down,
+.face-a {
+  grid-area: 3 / 2;
+}
+
+.face .pad-btn {
+  border-radius: 50%;
+  font-size: 3.2vh;
+}
+
+.face-y {
+  color: #f0c000;
+}
+
+.face-x {
+  color: #6aa8ff;
+}
+
+.face-b {
+  color: #ff6b6b;
+}
+
+.face-a {
+  color: #1adc2a;
+}
+
+.face .pad-btn.is-down {
+  color: #fff;
+}
+
 .pad-center {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--side);
+  right: var(--side);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   gap: 1vh;
-  min-height: 0;
+  min-width: 0;
 }
 
-.pad-readout .wheel-gear {
-  font-size: 18vh;
+.pad-center .wheel-status {
+  font-size: 2vh;
 }
 
-.pad-readout .wheel-speed {
-  font-size: 5vh;
+.pad-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5vw;
+}
+
+.pad-gear {
+  font-size: 11vh;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pad-gear.limiter {
+  color: var(--blue);
+}
+
+.pad-gear.flash {
+  color: var(--accent);
+}
+
+.pad-speed {
+  white-space: nowrap;
+  font-size: 3.4vh;
+  font-weight: 800;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .pad-shortcuts {
   width: 100%;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.8vh 0.6vw;
+  gap: 0.6vh 0.5vw;
 }
 
 .pad-shortcuts .shortcut {
-  padding: 1.4vh 0.4vw;
-  font-size: 2.1vh;
-}
-
-.pad-shortcuts .shortcut-value {
-  grid-column: span 2;
+  padding: 1vh 0.2vw;
+  font-size: 1.8vh;
+  border-radius: 1vh;
 }
 
 .pad-pit {
   grid-column: 1 / span 4;
 }
 
-.pad-settings {
-  width: 100%;
-  padding: 1.2vh 1vw;
+.pad-menu {
+  display: flex;
+  gap: 1.5vw;
 }
 
-.pad-pedals {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5vw;
-  min-height: 0;
+.pad-pill {
+  border-radius: 999px;
+  font-size: 2.2vh;
+  padding: 1.2vh 2vw;
+}
+
+.pad-settings {
+  width: 100%;
+  padding: 1vh 1vw;
+  font-size: 2.1vh;
 }

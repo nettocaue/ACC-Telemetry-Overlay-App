@@ -242,64 +242,70 @@
       </div>
 
       <div id="view-pad" class="view view-pad" hidden>
-        <div class="pad-side">
-          <button class="paddle bumper" data-shift="-1">LB · − REDUZIR</button>
-          <div class="stick" id="stick">
-            <div class="stick-ring"></div>
-            <div class="stick-knob" id="stick-knob"></div>
-            <span class="stick-label">DIREÇÃO</span>
-          </div>
+        <div class="pad-shoulders pad-shoulders-left">
+          <button class="pad-btn pad-shoulder" data-pad="lt" data-pedal-btn="brake">LT</button>
+          <button class="pad-btn pad-shoulder" data-pad="lb">LB</button>
+        </div>
+        <div class="pad-shoulders pad-shoulders-right">
+          <button class="pad-btn pad-shoulder" data-pad="rt" data-pedal-btn="gas">RT</button>
+          <button class="pad-btn pad-shoulder" data-pad="rb">RB</button>
+        </div>
+
+        <div class="stick stick-left" data-stick="left">
+          <div class="stick-ring"></div>
+          <div class="stick-knob"></div>
+          <span class="stick-label">MOVIMENTO</span>
+        </div>
+        <div class="stick stick-right" data-stick="right">
+          <div class="stick-ring"></div>
+          <div class="stick-knob"></div>
+          <span class="stick-label">CÂMERA</span>
+        </div>
+
+        <div class="dpad">
+          <button class="pad-btn dpad-up" data-pad="up" aria-label="Cima">▲</button>
+          <button class="pad-btn dpad-left" data-pad="left" aria-label="Esquerda">◀</button>
+          <button class="pad-btn dpad-right" data-pad="right" aria-label="Direita">▶</button>
+          <button class="pad-btn dpad-down" data-pad="down" aria-label="Baixo">▼</button>
+        </div>
+        <div class="face">
+          <button class="pad-btn face-y" data-pad="y">Y</button>
+          <button class="pad-btn face-x" data-pad="x">X</button>
+          <button class="pad-btn face-b" data-pad="b">B</button>
+          <button class="pad-btn face-a" data-pad="a">A</button>
         </div>
 
         <div class="pad-center">
           <div class="wheel-status drive-status"></div>
-          <div class="wheel-readout pad-readout">
-            <div class="wheel-gear" data-state="gear">N</div>
-            <div class="wheel-speed">
-              <span data-state="speed">0</span><span class="unit">km/h</span>
-            </div>
+          <div class="pad-readout">
+            <span class="pad-gear" data-state="gear">N</span>
+            <span class="pad-speed"><span data-state="speed">0</span> km/h</span>
           </div>
           <div class="shortcuts pad-shortcuts">
-            <span class="shortcut-value" data-state="tc">TC -</span>
-            <span class="shortcut-value" data-state="abs">ABS -</span>
             <button class="shortcut" data-button="tcDown">TC −</button>
             <button class="shortcut" data-button="tcUp">TC +</button>
             <button class="shortcut" data-button="absDown">ABS −</button>
             <button class="shortcut" data-button="absUp">ABS +</button>
-            <button class="shortcut" data-button="pitLimiter" data-state="pitLimiter">PIT LIM</button>
-            <button class="shortcut" data-button="ignition" data-state="ignition">IGNIÇÃO</button>
+            <button class="shortcut" data-button="pitLimiter" data-state="pitLimiter">PIT</button>
+            <button class="shortcut" data-button="ignition" data-state="ignition">IGN</button>
             <button class="shortcut" data-button="starter" data-state="starter">PARTIDA</button>
             <button class="shortcut" data-button="flash" data-state="flash">FAROL</button>
             <button class="shortcut shortcut-pit pad-pit" data-button="pitRequest" data-state="pitRequest">PEDIR PIT</button>
           </div>
-          <button class="ghost-btn settings-open pad-settings">Ajustes</button>
-        </div>
-
-        <div class="pad-side">
-          <button class="paddle bumper" data-shift="1">RB · SUBIR +</button>
-          <div class="pad-pedals">
-            <div class="pedal-slider" data-pedal="brake">
-              <div class="slider-track">
-                <div class="slider-fill fill-brake"></div>
-              </div>
-              <span class="slider-label">FREIO</span>
-            </div>
-            <div class="pedal-slider" data-pedal="gas">
-              <div class="slider-track">
-                <div class="slider-fill fill-gas"></div>
-              </div>
-              <span class="slider-label">ACELERADOR</span>
-            </div>
+          <div class="pad-menu">
+            <button class="pad-btn pad-pill" data-pad="select">SELECT</button>
+            <button class="pad-btn pad-pill" data-pad="start">START</button>
           </div>
+          <button class="ghost-btn settings-open pad-settings">Ajustes</button>
         </div>
 
         <div class="wheel-start" id="pad-start">
           <p>
-            Segure o celular deitado com os dois polegares: analógico da
-            direção à esquerda, freio e acelerador à direita.
+            Segure o celular deitado com os dois polegares, como um controle.
+            Funciona em qualquer jogo que aceite joystick.
           </p>
           <p class="start-note"></p>
-          <button class="start-btn" data-start="pad">Começar a pilotar</button>
+          <button class="start-btn" data-start="pad">Começar a jogar</button>
           <button class="ghost-btn settings-open">
             Ajustes e mapeamento no jogo
           </button>
@@ -321,6 +327,8 @@
                 Nos controles do jogo, clique no comando e toque no botão
                 correspondente aqui. Só aquele comando se mexe. No AMS2, use
                 "Volante ←" e "Volante →" para esterçar à esquerda e à direita.
+                Os botões da aba Controle (A, B, X, Y, setas, LB, RB…) você
+                mapeia apertando direto neles.
               </p>
               <div class="bind-buttons">
                 <button class="ghost-btn" data-bind="steer">Volante</button>
@@ -336,6 +344,9 @@
                 <button class="ghost-btn" data-bind="shiftDown">
                   Reduzir marcha
                 </button>
+                <button class="ghost-btn" data-bind="ly">Analógico esq. ↕</button>
+                <button class="ghost-btn" data-bind="rx">Analógico dir. ↔</button>
+                <button class="ghost-btn" data-bind="ry">Analógico dir. ↕</button>
               </div>
               <h3>Mapear atalhos</h3>
               <div class="bind-buttons">

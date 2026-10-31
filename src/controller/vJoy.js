@@ -10,6 +10,9 @@ import path from 'node:path';
 import koffi from 'koffi';
 
 export const AXIS = { X: 0x30, Y: 0x31, Z: 0x32 };
+// Extra axes used only by the full on-screen controller (second stick and
+// the left stick's vertical). Optional: missing ones are simply skipped.
+export const EXTRA_AXIS = { RX: 0x33, RY: 0x34, RZ: 0x35 };
 const AXIS_MIN = 0x1;
 const AXIS_MAX = 0x8000;
 
@@ -72,6 +75,7 @@ export class VJoyDevice {
     this.api = null;
     this.acquired = false;
     this.buttonCount = 0;
+    this.extraAxes = new Set();
     this.lastAxis = new Map();
   }
 
@@ -119,6 +123,9 @@ export class VJoyDevice {
     this.api = a;
     this.acquired = true;
     this.buttonCount = buttonCount;
+    this.extraAxes = new Set(
+      Object.values(EXTRA_AXIS).filter((usage) => a.GetVJDAxisExist(id, usage)),
+    );
     this.lastAxis.clear();
     a.ResetVJD(id);
   }
@@ -137,6 +144,7 @@ export class VJoyDevice {
   // value: 0..1
   setAxis(usage, value) {
     if (!this.acquired) return;
+    if (usage >= EXTRA_AXIS.RX && !this.extraAxes.has(usage)) return;
     const v = Math.round(
       AXIS_MIN + Math.max(0, Math.min(1, value)) * (AXIS_MAX - AXIS_MIN),
     );

@@ -457,6 +457,11 @@
     { key: 'gestureShift', label: 'Trocar marcha inclinando (só volante)', def: true },
     { key: 'invertShift', label: 'Inverter direção do tranco', def: false },
     { key: 'invertSteer', label: 'Inverter direção', def: false },
+    {
+      key: 'stickPedals',
+      label: 'Controle: analógico direito acelera (↑) e freia (↓)',
+      def: false,
+    },
     { key: 'vibrate', label: 'Vibrar ao trocar marcha', def: true },
     {
       key: 'hapticTrack',
@@ -728,25 +733,29 @@
     paddle.addEventListener('pointerdown', () => shift(Number(paddle.dataset.shift)));
   });
 
-  // --- Analog stick (controller view) ------------------------------------
+  // --- Full controller (Controle tab) ---------------------------------------
 
-  const stick = { x: 0, pointerId: null };
-  (() => {
-    const zone = $('stick');
-    const knob = $('stick-knob');
+  // Two on-screen sticks: left = movement/steering, right = camera.
+  const sticks = {};
+  document.querySelectorAll('[data-stick]').forEach((zone) => {
+    const stick = { x: 0, y: 0, pointerId: null };
+    sticks[zone.dataset.stick] = stick;
+    const knob = zone.querySelector('.stick-knob');
     const move = (e) => {
-      const r = zone.getBoundingClientRect();
-      const radius = Math.min(r.width, r.height) * 0.38;
+      const r = zone.querySelector('.stick-ring').getBoundingClientRect();
+      const radius = r.width * 0.36;
       const dx = e.clientX - (r.left + r.width / 2);
       const dy = e.clientY - (r.top + r.height / 2);
       const len = Math.hypot(dx, dy);
       const k = len > radius ? radius / len : 1;
-      stick.x = Math.max(-1, Math.min(1, dx / radius));
+      stick.x = (dx * k) / radius;
+      stick.y = (dy * k) / radius;
       knob.style.transform = `translate(calc(-50% + ${dx * k}px), calc(-50% + ${dy * k}px))`;
     };
     const release = () => {
       stick.pointerId = null;
       stick.x = 0;
+      stick.y = 0;
       knob.style.transform = 'translate(-50%, -50%)';
       zone.classList.remove('is-pressed');
     };
@@ -767,14 +776,63 @@
       if (e.pointerId === stick.pointerId) release();
     });
     zone.addEventListener('lostpointercapture', () => release());
-  })();
+  });
 
-  function stickValue() {
-    let x = settings.invertSteer ? -stick.x : stick.x;
+  // Deadzone + response curve shared with the tilt wheel.
+  function shapeAxis(v) {
     const dz = settings.steerDeadzone / 100;
-    const mag = Math.abs(x);
-    x = mag <= dz ? 0 : (Math.sign(x) * (mag - dz)) / (1 - dz);
-    return Math.sign(x) * Math.abs(x) ** settings.steerCurve;
+    const mag = Math.abs(v);
+    const x = mag <= dz ? 0 : (mag - dz) / (1 - dz);
+    return Math.sign(v) * x ** settings.steerCurve;
+  }
+  function stickValue() {
+    const x = shapeAxis(sticks.left.x);
+    return settings.invertSteer ? -x : x;
+  }
+
+  // Pad buttons are held while the finger is down. LT/RT act as full brake
+  // and throttle (and are the brake/throttle axes in the game).
+  const triggers = { gas: 0, brake: 0 };
+  document.querySelectorAll('[data-pad]').forEach((btn) => {
+    const id = btn.dataset.pad;
+    const pedal = btn.dataset.pedalBtn;
+    let pointerId = null;
+    const press = (e) => {
+      if (!driving || pointerId !== null) return;
+      pointerId = e.pointerId;
+      btn.setPointerCapture(e.pointerId);
+      btn.classList.add('is-down');
+      if (pedal) triggers[pedal] = 1;
+      else send({ type: 'button', id, pressed: true });
+      if (settings.vibrate && navigator.vibrate) navigator.vibrate(10);
+    };
+    const release = (e) => {
+      if (pointerId === null || (e && e.pointerId !== pointerId)) return;
+      pointerId = null;
+      btn.classList.remove('is-down');
+      if (pedal) triggers[pedal] = 0;
+      else send({ type: 'button', id, pressed: false });
+    };
+    btn.addEventListener('pointerdown', press);
+    btn.addEventListener('pointerup', release);
+    btn.addEventListener('pointercancel', release);
+    btn.addEventListener('lostpointercapture', () => release());
+  });
+
+  function padInput() {
+    const ly = shapeAxis(sticks.left.y);
+    let rx = shapeAxis(sticks.right.x);
+    let ry = shapeAxis(sticks.right.y);
+    let gas = triggers.gas;
+    let brake = triggers.brake;
+    if (settings.stickPedals) {
+      // Racing: right stick up = throttle, down = brake (analog).
+      gas = Math.max(gas, -ry);
+      brake = Math.max(brake, ry);
+      rx = 0;
+      ry = 0;
+    }
+    return { steer: stickValue(), gas, brake, ly, rx, ry };
   }
 
   // --- Track vibration (kerbs, off-track, impacts) ----------------------
@@ -853,6 +911,14 @@
       cls += ' error';
     } else if (controller.busy) {
       text = 'Outro celular está pilotando';
+      cls += ' warn';
+    } else if (
+      currentView === 'pad' &&
+      controller.buttonCount > 0 &&
+      (controller.buttonCount < (controller.padButtonsNeeded || 21) ||
+        controller.padAxes < 3)
+    ) {
+      text = `O controle completo precisa de ${controller.padButtonsNeeded || 21} botões e dos eixos Rx, Ry e Rz no vJoy (hoje: ${controller.buttonCount} botões). Ajuste no "Configure vJoy".`;
       cls += ' warn';
     } else if (
       settings.shortcuts &&
@@ -952,18 +1018,22 @@
         const left = `${50 + steer.value * 50}%`;
         if (dot.style.left !== left) dot.style.left = left;
         setText($('steer-angle'), `${Math.round(steer.deg)}°`);
-      } else {
-        steer = { value: stickValue() };
       }
 
       if (driving && controller.ready && !controller.busy && now - lastSendAt >= 15) {
         lastSendAt = now;
-        send({
-          type: 'input',
-          steer: Number(steer.value.toFixed(4)),
-          gas: Number(pedalValue(pedals.gas).toFixed(3)),
-          brake: Number(pedalValue(pedals.brake).toFixed(3)),
-        });
+        const round = (v, d) => Number(v.toFixed(d));
+        const msg =
+          currentView === 'pad'
+            ? Object.fromEntries(
+                Object.entries(padInput()).map(([k, v]) => [k, round(v, 4)]),
+              )
+            : {
+                steer: round(steer.value, 4),
+                gas: round(pedalValue(pedals.gas), 3),
+                brake: round(pedalValue(pedals.brake), 3),
+              };
+        send({ type: 'input', ...msg });
       }
       updateWheelStatus();
     }
