@@ -3,6 +3,75 @@ import { useEffect, useState } from 'react';
 import { createElement as h } from 'react';
 import './index.css';
 
+// "Phone as a wheel" toggle + vJoy status/setup, inside the phone panel.
+function ControllerSection({ controller, onToggle }) {
+  const [showHelp, setShowHelp] = useState(false);
+  if (!controller) return null;
+
+  let state = null;
+  if (controller.enabled && controller.error) {
+    state = h('p', { key: 'err', className: 'error' }, controller.error);
+  } else if (controller.enabled) {
+    state = h(
+      'p',
+      { key: 'ok', className: 'controller-ok' },
+      'vJoy pronto. No celular, abra a aba "Volante".',
+    );
+  }
+
+  return h('div', { className: 'controller-section' }, [
+    h('div', { key: 'row', className: 'widget-list-row' }, [
+      h(
+        'span',
+        { key: 'name', className: 'widget-list-name' },
+        'Usar o celular como volante (vJoy)',
+      ),
+      h('label', { key: 'toggle', className: 'switch' }, [
+        h('input', {
+          key: 'input',
+          type: 'checkbox',
+          checked: controller.enabled,
+          onChange: (e) => onToggle(e.target.checked),
+        }),
+        h('span', { key: 'slider', className: 'switch-slider' }),
+      ]),
+    ]),
+    state,
+    h(
+      'button',
+      {
+        key: 'help-btn',
+        className: 'link-btn',
+        onClick: () => setShowHelp(!showHelp),
+      },
+      showHelp ? 'Esconder instruções' : 'Como configurar (primeira vez)',
+    ),
+    showHelp &&
+      h('ol', { key: 'help', className: 'controller-help' }, [
+        h('li', { key: 1 }, [
+          'Instale o vJoy (versão para Windows 10/11): ',
+          h('code', { key: 'c' }, 'github.com/BrunnerInnovation/vJoy/releases'),
+          ' e reinicie o PC.',
+        ]),
+        h(
+          'li',
+          { key: 2 },
+          'Abra o "Configure vJoy": no dispositivo 1, deixe os eixos X, Y e Z ativados e coloque 10 botões (2 para a troca de marcha e 8 para os atalhos: TC, ABS, pit limiter, ignição, partida e farol).',
+        ),
+        h(
+          'li',
+          { key: 3 },
+          'Ligue a chave acima e, no celular, abra a aba "Volante".',
+        ),
+        h(
+          'li',
+          { key: 4 },
+          'No ACC, em Opções → Controles, clique em cada comando (volante, acelerador, freio, marchas e os atalhos) e toque no botão correspondente em Ajustes → "Mapear no ACC" / "Mapear atalhos", no celular.',
+        ),
+      ]),
+  ]);
+}
+
 // Phone dash: toggles the local HTTPS server and shows the QR code / URL
 // the phone opens. All the networking lives in the main process.
 function PhonePanel() {
@@ -115,6 +184,12 @@ function PhonePanel() {
               copied ? 'Copiado!' : 'Copiar',
             ),
           ]),
+          h(ControllerSection, {
+            key: 'controller',
+            controller: status.controller,
+            onToggle: async (enabled) =>
+              setStatus(await window.remote.setController(enabled)),
+          }),
           addresses.length > 1 &&
             h('label', { key: 'ip', className: 'phone-ip-select' }, [
               'Rede: ',

@@ -18,6 +18,8 @@ import { ensureBroadcastingConfig } from './config/accConfig.js';
 import { WIDGET_DEFS } from './widgets/registry.js';
 import { RemoteServer, generateToken } from './remote/remoteServer.js';
 import { qrToSvg } from './remote/qrCode.js';
+import { VJoyDevice } from './controller/vJoy.js';
+import { PhoneController } from './controller/phoneController.js';
 import iconPath from './assets/icon.png';
 import phoneHtml from './phone/index.html?raw';
 import phoneJs from './phone/phone.js?raw';
@@ -203,11 +205,29 @@ function runApp() {
   sharedMemoryClient.on('static', (data) => remoteServer.updateStatic(data));
   sharedMemoryClient.on('graphics', (data) => remoteServer.updateGraphics(data));
 
+  // Phone as a wheel: opt-in, because it needs the vJoy driver installed.
+  const phoneController = new PhoneController({ device: new VJoyDevice(1) });
+  remoteServer.on('input', (id, input) => phoneController.handleInput(id, input));
+  remoteServer.on('shift', (id, dir) => phoneController.handleShift(id, dir));
+  remoteServer.on('bind', (id, target) => phoneController.handleBind(id, target));
+  remoteServer.on('button', (id, button, pressed) =>
+    phoneController.handleButton(id, button, pressed),
+  );
+  remoteServer.on('clientGone', (id) => phoneController.clientGone(id));
+  phoneController.on('status', (state) => {
+    remoteServer.setControllerState(state);
+    mainWindow?.webContents.send('remote:status', remoteStatus());
+  });
+
   const remoteStatus = () => {
     const status = remoteServer.status();
     return {
       ...status,
       enabled: Boolean(settings.remote?.enabled),
+      controller: {
+        ...phoneController.status(),
+        enabled: Boolean(settings.remote?.controller),
+      },
       addresses: status.addresses.map((a) => ({
         ...a,
         qrSvg: qrToSvg(a.url),
@@ -238,8 +258,21 @@ function runApp() {
     updateBothSettings((s) => {
       s.remote = { ...s.remote, enabled };
     });
-    if (enabled) startRemoteServer();
-    else remoteServer.stop();
+    if (enabled) {
+      startRemoteServer();
+      if (settings.remote?.controller) phoneController.enable();
+    } else {
+      phoneController.disable();
+      remoteServer.stop();
+    }
+    return remoteStatus();
+  });
+  ipcMain.handle('remote:setController', (_e, enabled) => {
+    updateBothSettings((s) => {
+      s.remote = { ...s.remote, controller: enabled };
+    });
+    if (enabled && settings.remote?.enabled) phoneController.enable();
+    else phoneController.disable();
     return remoteStatus();
   });
 
@@ -756,7 +789,10 @@ function runApp() {
     createLockedWindows(); // everything else starts consolidated per monitor
     createTray();
     globalShortcut.register('F12', () => setEditMode(!editModeEnabled));
-    if (settings.remote?.enabled) startRemoteServer();
+    if (settings.remote?.enabled) {
+      startRemoteServer();
+      if (settings.remote?.controller) phoneController.enable();
+    }
 
     if (app.isPackaged) {
       autoUpdater.setFeedURL({
@@ -796,6 +832,7 @@ function runApp() {
     if (process.platform !== 'darwin' && app.isQuitting) {
       broadcastClient.disconnect();
       sharedMemoryClient.stop();
+      phoneController.disable();
       remoteServer.stop();
       app.quit();
     }

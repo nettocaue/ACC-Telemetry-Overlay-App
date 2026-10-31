@@ -86,6 +86,9 @@ export class RemoteServer extends EventEmitter {
     this.port = null;
     this.token = null;
     this.clients = new Set();
+    this.nextClientId = 1;
+    // Phone-controller state pushed to every phone: { ready, error, ownerId }
+    this.controllerState = { enabled: false, ready: false, error: null, ownerId: null };
     this.sendTimer = null;
     this.keepaliveTimer = null;
     this.error = null;
@@ -225,9 +228,11 @@ export class RemoteServer extends EventEmitter {
     const client = acceptUpgrade(req, socket);
     if (!client) return;
 
+    client.id = this.nextClientId++;
     this.clients.add(client);
     client.on('close', () => {
       this.clients.delete(client);
+      this.emit('clientGone', client.id);
       if (this.clients.size === 0) {
         clearInterval(this.sendTimer);
         this.sendTimer = null;
@@ -236,7 +241,8 @@ export class RemoteServer extends EventEmitter {
     });
     client.on('message', (text) => this._handleClientMessage(client, text));
 
-    client.send(JSON.stringify({ type: 'hello', version: 1 }));
+    client.send(JSON.stringify({ type: 'hello', version: 2 }));
+    client.send(this._controllerMessage(client));
     if (!this.sendTimer) {
       this.sendTimer = setInterval(() => this._broadcast(), SEND_INTERVAL_MS);
     }
@@ -250,10 +256,49 @@ export class RemoteServer extends EventEmitter {
     } catch {
       return;
     }
-    if (msg?.type === 'ping') {
-      client.send(JSON.stringify({ type: 'pong', t: msg.t }));
+    switch (msg?.type) {
+      case 'ping':
+        client.send(JSON.stringify({ type: 'pong', t: msg.t }));
+        break;
+      case 'input':
+        this.emit('input', client.id, {
+          steer: Number(msg.steer),
+          gas: Number(msg.gas),
+          brake: Number(msg.brake),
+        });
+        break;
+      case 'shift':
+        this.emit('shift', client.id, Number(msg.dir));
+        break;
+      case 'button':
+        this.emit('button', client.id, String(msg.id), Boolean(msg.pressed));
+        break;
+      case 'bind':
+        this.emit('bind', client.id, String(msg.target));
+        break;
+      default:
+        break;
     }
-    // Controller input (steering/pedals/shifts) will be handled here.
+  }
+
+  // Called by main.js whenever the phone controller's state changes.
+  setControllerState(state) {
+    this.controllerState = state;
+    for (const client of this.clients) client.send(this._controllerMessage(client));
+  }
+
+  _controllerMessage(client) {
+    const { enabled, ready, error, ownerId, buttonCount } =
+      this.controllerState;
+    return JSON.stringify({
+      type: 'controller',
+      enabled,
+      ready,
+      error,
+      buttonCount: buttonCount ?? 0,
+      // Another phone is currently driving.
+      busy: ownerId !== null && ownerId !== client.id,
+    });
   }
 
   _keepalive() {
@@ -286,6 +331,11 @@ export class RemoteServer extends EventEmitter {
       clutch: p?.clutch ?? 0,
       ffb: p?.finalFF ?? 0,
       pitLimiter: Boolean(p?.pitLimiterOn),
+      ignition: Boolean(p?.ignitionOn),
+      engineRunning: Boolean(p?.isEngineRunning),
+      tc: g?.tc ?? null,
+      abs: g?.abs ?? null,
+      flashing: Boolean(g?.flashingLights),
       tcActive: Boolean(p?.tcInAction),
       absActive: Boolean(p?.absInAction),
       fuel: p?.fuel ?? 0,

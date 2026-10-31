@@ -30,6 +30,17 @@ Mostra marcha, velocidade, shift lights, delta da volta, últimas voltas, pneus,
 
 Use o celular na horizontal e toque em ⛶ para tela cheia.
 
+### Celular como volante
+
+Na aba **Volante** da página do celular, você pilota inclinando o celular como um volante. O freio e o acelerador são os sliders das laterais. Para trocar de marcha, incline o topo do celular para frente (sobe) ou para trás (reduz), ou use os botões SUBIR/REDUZIR. Ao lado da marcha ficam os atalhos: TC+/−, ABS+/−, pit limiter, ignição, partida e piscar farol.
+
+1. Instale o [vJoy](https://github.com/BrunnerInnovation/vJoy/releases) e reinicie o PC. No "Configure vJoy", o dispositivo 1 precisa dos eixos X, Y e Z e de 10 botões (2 de marcha + 8 de atalhos).
+2. No app, ligue **Usar o celular como volante (vJoy)**.
+3. No celular, abra a aba **Volante** e toque em **Começar a pilotar**.
+4. No ACC, vá em Opções → Controles e mapeie volante, acelerador, freio, marchas e atalhos usando os botões de **Ajustes → Mapear no ACC / Mapear atalhos**. Cada botão mexe só aquele comando.
+
+Por segurança, se o celular parar de mandar comandos (Wi-Fi caiu, tela apagou, app fechado), o PC solta o acelerador e o freio na hora.
+
 ## Como funciona
 
 - **Broadcasting Protocol** (UDP) da própria ACC — velocidade, marcha, posição, classificação.
