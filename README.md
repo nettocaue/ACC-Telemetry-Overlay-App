@@ -54,6 +54,10 @@ Nenhuma configuração manual de host/porta/senha é necessária: o app cria o `
 - Windows 10/11
 - Assetto Corsa Competizione
 
+## Publicar uma versão nova
+
+Mude o `"version"` no `package.json` (ex.: `1.5.0` → `1.5.1`) num PR e faça o merge na `main`. O GitHub Actions gera o instalador num Windows da nuvem e publica a Release sozinho (aba **Actions** mostra o andamento). Quem já tem o app instalado recebe a atualização automaticamente.
+
 ## Desenvolvimento
 
 ```bash
