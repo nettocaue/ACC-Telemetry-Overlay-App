@@ -1,14 +1,16 @@
-# ACC Telemetry Overlay App
+# Interleigos Telemetry
 
-Overlays de telemetria para **Assetto Corsa Competizione** e **Automobilista 2** — velocidade, marcha, posição, classificação, pneus, combustível, danos e um traço de pedais/RPM em tempo real, direto na tela enquanto você pilota.
+App da comunidade [Interleigos](https://interleigos.vercel.app/telemetry) com overlays de telemetria, dash no celular e celular como volante para **Assetto Corsa Competizione** e **Automobilista 2** — velocidade, marcha, posição, classificação, pneus, combustível, danos e um traço de pedais/RPM em tempo real, direto na tela enquanto você pilota.
 
 > ⚠️ **Beta**. Funciona, mas ainda em desenvolvimento ativo.
 
 ## Instalação
 
 1. Baixe o instalador na [página de Releases](../../releases).
-2. Rode `ACC Telemetry App Setup.exe`.
-3. Abra a ACC, entre numa sessão (treino/corrida) — o app conecta sozinho, sem configuração.
+2. Rode o `Setup.exe` (o arquivo ainda se chama `ACC Telemetry App … Setup.exe`, nome mantido para não quebrar a atualização automática de quem já tem o app).
+3. Abra a ACC ou o AMS2 e entre numa sessão (treino/corrida) — o app detecta o jogo e conecta sozinho.
+
+Guia completo, com imagens: https://interleigos.vercel.app/telemetry/guia
 
 Também tem uma versão portátil (`.zip`) nos Releases, se preferir não instalar.
 
@@ -51,7 +53,18 @@ Todos os widgets e a dash no celular funcionam no AMS2. Diferenças em relação
 - **Danos**: aerodinâmica, motor e suspensão de cada lado.
 - **Não disponíveis no AMS2**: força no volante, previsão de chuva e aderência da pista.
 
-Se algum número parecer errado, use **Gravar diagnóstico** na janela principal: o app salva 5 segundos dos dados lidos num arquivo em `Documentos/ACC Telemetry App/diagnostico`.
+Se algum número parecer errado, use **Gravar diagnóstico** na janela principal: o app salva 5 segundos dos dados lidos num arquivo em `Documentos/Interleigos Telemetry/diagnostico`.
+
+### Volante pelo celular no AMS2
+
+No AMS2 o celular funciona como **controle (gamepad)**, não como volante:
+
+1. **Opções → Controles → Esq. de controle**: crie um pré-ajuste com **Tipo: Gamepad/Controle** e **Criar: Personalizado**.
+2. **Editar associações → Movimento**: em *Virando à esquerda* use o botão **Volante ← esquerda** dos Ajustes do celular; em *Virando à direita*, **Volante → direita**; depois Acelerador, Freio e as marchas.
+3. **Configuração**: coloque **Amortecedor do controle** e as zonas mortas em **0**.
+4. **Salvar**.
+
+Com o tipo *Volante* o AMS2 reconhece os pedais, mas não gira o volante pelo vJoy.
 
 ## Como funciona
 

@@ -1,9 +1,9 @@
 {
   "name": "acc-telemetry-app",
   "productName": "ACC Telemetry App",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "private": true,
-  "description": "Overlays de telemetria em tempo real para Assetto Corsa Competizione",
+  "description": "Interleigos Telemetry — overlays de telemetria, dash e volante no celular para ACC e Automobilista 2",
   "keywords": [],
   "license": "MIT",
   "author": {

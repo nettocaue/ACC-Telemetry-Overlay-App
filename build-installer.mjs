@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8'));
 const version = pkg.version;
 
-console.log(`Building ACC Telemetry App v${version} installer…`);
+console.log(`Building Interleigos Telemetry v${version} installer…`);
 
 console.log('\n[1/3] Packaging Electron app…');
 execSync('npx electron-forge package', { stdio: 'inherit', cwd: __dirname });

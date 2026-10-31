@@ -350,7 +350,7 @@ function runApp() {
     broadcastClient.connect({
       host: '127.0.0.1',
       port: broadcastConfig.port,
-      displayName: 'ACC Telemetry App',
+      displayName: 'Interleigos Telemetry',
       connectionPassword: broadcastConfig.connectionPassword,
       commandPassword: broadcastConfig.commandPassword,
     });
@@ -775,7 +775,7 @@ function runApp() {
       .createFromPath(iconPath)
       .resize({ width: 16, height: 16 });
     tray = new Tray(trayIcon);
-    tray.setToolTip('ACC Telemetry App');
+    tray.setToolTip('Interleigos Telemetry');
     tray.on('click', () => {
       if (!mainWindow) {
         createMainWindow();
@@ -845,7 +845,7 @@ function runApp() {
     broadcastClient.connect({
       host: '127.0.0.1',
       port: broadcastConfig.port,
-      displayName: 'ACC Telemetry App',
+      displayName: 'Interleigos Telemetry',
       connectionPassword: broadcastConfig.connectionPassword,
       commandPassword: broadcastConfig.commandPassword,
     });
@@ -871,7 +871,7 @@ function runApp() {
         updateDownloaded = true;
         tray.displayBalloon({
           iconType: 'info',
-          title: 'ACC Telemetry App — Atualização pronta',
+          title: 'Interleigos Telemetry — Atualização pronta',
           content: `Versão ${releaseName} baixada. Clique com botão direito no ícone da bandeja e escolha "Reiniciar para instalar atualização".`,
         });
       });

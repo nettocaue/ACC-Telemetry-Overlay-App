@@ -7,6 +7,11 @@ import { WebpackPlugin } from '@electron-forge/plugin-webpack';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 
+// Note: package.json "productName" stays "ACC Telemetry App" on purpose.
+// Squirrel derives the install folder, the .exe name and the update channel
+// from it, so changing it would cut existing installs off from automatic
+// updates. The name people see (window, tray, phone page) is "Interleigos
+// Telemetry".
 const config = {
   packagerConfig: {
     // Native .node binaries (koffi) can't be dlopen'd from inside the asar
