@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#08090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>ACC Dash</title>
+    <link rel="stylesheet" href="/phone.css" />
+  </head>
+  <body>
+    <div id="rotate-hint" class="rotate-hint">
+      <div class="rotate-icon"></div>
+      <p>Gire o celular para a horizontal</p>
+    </div>
+
+    <main id="dash" class="dash">
+      <header class="topbar">
+        <div class="topbar-left">
+          <span class="brand">ACC<span class="brand-accent">DASH</span></span>
+          <span id="session-info" class="session-info"></span>
+        </div>
+        <div id="shift-lights" class="shift-lights"></div>
+        <div class="topbar-right">
+          <span id="conn" class="conn conn-connecting">Conectando…</span>
+          <button id="fullscreen-btn" class="icon-btn" title="Tela cheia">
+            ⛶
+          </button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <div class="col">
+          <div class="card card-delta">
+            <div class="card-title">DELTA DA VOLTA</div>
+            <div id="delta" class="delta">--.---</div>
+            <div class="lap-pair">
+              <div>
+                <div class="mini-label">MELHOR</div>
+                <div id="best-lap" class="mini-value best">--:--.---</div>
+              </div>
+              <div>
+                <div class="mini-label">ÚLTIMA</div>
+                <div id="last-lap" class="mini-value">--:--.---</div>
+              </div>
+            </div>
+          </div>
+          <div class="card card-history">
+            <div class="card-title">ÚLTIMAS VOLTAS</div>
+            <ol id="lap-history" class="lap-history"></ol>
+          </div>
+        </div>
+
+        <div class="col col-center">
+          <div class="card card-gear">
+            <div class="card-title">MARCHA</div>
+            <div id="gear" class="gear">N</div>
+            <div class="badges">
+              <span id="badge-pit" class="badge badge-pit">PIT</span>
+              <span id="badge-tc" class="badge badge-tc">TC</span>
+              <span id="badge-abs" class="badge badge-abs">ABS</span>
+            </div>
+          </div>
+          <div class="card card-speed">
+            <div>
+              <div class="card-title">VELOCIDADE</div>
+              <div class="speed-row">
+                <span id="speed" class="speed">0</span>
+                <span class="unit">km/h</span>
+              </div>
+            </div>
+            <div class="pos-block">
+              <div class="card-title">POSIÇÃO</div>
+              <div id="position" class="position">P-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="card card-tyres">
+            <div class="card-title">
+              PNEUS <span id="compound" class="compound"></span>
+            </div>
+            <div class="tyres">
+              <div class="tyre" data-i="0">
+                <span class="tyre-temp">--°</span
+                ><span class="tyre-psi">-- psi</span>
+              </div>
+              <div class="tyre" data-i="1">
+                <span class="tyre-temp">--°</span
+                ><span class="tyre-psi">-- psi</span>
+              </div>
+              <div class="tyre" data-i="2">
+                <span class="tyre-temp">--°</span
+                ><span class="tyre-psi">-- psi</span>
+              </div>
+              <div class="tyre" data-i="3">
+                <span class="tyre-temp">--°</span
+                ><span class="tyre-psi">-- psi</span>
+              </div>
+            </div>
+          </div>
+          <div class="card card-fuel">
+            <div>
+              <div class="card-title">COMBUSTÍVEL</div>
+              <div class="fuel-row">
+                <span id="fuel" class="fuel">--</span><span class="unit">L</span>
+              </div>
+            </div>
+            <div>
+              <div class="card-title">VOLTAS</div>
+              <div id="fuel-laps" class="fuel-laps">--</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="pedals">
+        <div class="pedal">
+          <span class="pedal-label">EMBREAGEM</span>
+          <div class="pedal-track">
+            <div id="bar-clutch" class="pedal-fill fill-clutch"></div>
+          </div>
+          <span id="val-clutch" class="pedal-val">0%</span>
+        </div>
+        <div class="pedal">
+          <span class="pedal-label">FREIO</span>
+          <div class="pedal-track">
+            <div id="bar-brake" class="pedal-fill fill-brake"></div>
+          </div>
+          <span id="val-brake" class="pedal-val">0%</span>
+        </div>
+        <div class="pedal">
+          <span class="pedal-label">ACELERADOR</span>
+          <div class="pedal-track">
+            <div id="bar-gas" class="pedal-fill fill-gas"></div>
+          </div>
+          <span id="val-gas" class="pedal-val">0%</span>
+        </div>
+        <div class="pedal">
+          <span class="pedal-label">FORÇA NO VOLANTE</span>
+          <div class="pedal-track">
+            <div id="bar-ffb" class="pedal-fill fill-ffb"></div>
+          </div>
+          <span id="val-ffb" class="pedal-val">0%</span>
+        </div>
+      </footer>
+
+      <div id="waiting" class="waiting">
+        <p id="waiting-text">Aguardando a ACC…</p>
+      </div>
+    </main>
+
+    <script src="/phone.js"></script>
+  </body>
+</html>

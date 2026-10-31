@@ -1,3 +1,4 @@
+import path from 'node:path';
 import {
   app,
   BrowserWindow,
@@ -15,7 +16,12 @@ import { AccSharedMemoryClient } from './telemetry/accSharedMemory.js';
 import { loadSettings, saveSettings } from './config/settingsStore.js';
 import { ensureBroadcastingConfig } from './config/accConfig.js';
 import { WIDGET_DEFS } from './widgets/registry.js';
+import { RemoteServer, generateToken } from './remote/remoteServer.js';
+import { qrToSvg } from './remote/qrCode.js';
 import iconPath from './assets/icon.png';
+import phoneHtml from './phone/index.html?raw';
+import phoneJs from './phone/phone.js?raw';
+import phoneCss from './phone/phone.css?raw';
 
 if (started) {
   app.quit();
@@ -186,6 +192,56 @@ function runApp() {
     broadcastToWindows('acc:sharedMemoryError', err.message),
   );
   sharedMemoryClient.start(16); // ~60Hz — matches frame rate, minimizes pedal/RPM trace lag
+
+  // --- Phone dash (served over the local network) --------------------------
+  const DEFAULT_REMOTE_PORT = 8770;
+  const remoteServer = new RemoteServer({
+    certPath: path.join(app.getPath('userData'), 'remote-cert.json'),
+    assets: { html: phoneHtml, js: phoneJs, css: phoneCss },
+  });
+  sharedMemoryClient.on('physics', (data) => remoteServer.updatePhysics(data));
+  sharedMemoryClient.on('static', (data) => remoteServer.updateStatic(data));
+  sharedMemoryClient.on('graphics', (data) => remoteServer.updateGraphics(data));
+
+  const remoteStatus = () => {
+    const status = remoteServer.status();
+    return {
+      ...status,
+      enabled: Boolean(settings.remote?.enabled),
+      addresses: status.addresses.map((a) => ({
+        ...a,
+        qrSvg: qrToSvg(a.url),
+      })),
+    };
+  };
+  remoteServer.on('status', () =>
+    mainWindow?.webContents.send('remote:status', remoteStatus()),
+  );
+
+  const startRemoteServer = () => {
+    // The token is part of the QR code; it's created once and kept, so a
+    // phone that already scanned it reconnects on its own next time.
+    if (!settings.remote?.token) {
+      const token = generateToken();
+      updateBothSettings((s) => {
+        s.remote = { ...s.remote, token };
+      });
+    }
+    remoteServer.start({
+      port: settings.remote.port ?? DEFAULT_REMOTE_PORT,
+      token: settings.remote.token,
+    });
+  };
+
+  ipcMain.handle('remote:getStatus', () => remoteStatus());
+  ipcMain.handle('remote:setEnabled', (_e, enabled) => {
+    updateBothSettings((s) => {
+      s.remote = { ...s.remote, enabled };
+    });
+    if (enabled) startRemoteServer();
+    else remoteServer.stop();
+    return remoteStatus();
+  });
 
   ipcMain.handle('acc:reconnect', () => {
     broadcastClient.disconnect();
@@ -700,6 +756,7 @@ function runApp() {
     createLockedWindows(); // everything else starts consolidated per monitor
     createTray();
     globalShortcut.register('F12', () => setEditMode(!editModeEnabled));
+    if (settings.remote?.enabled) startRemoteServer();
 
     if (app.isPackaged) {
       autoUpdater.setFeedURL({
@@ -739,6 +796,7 @@ function runApp() {
     if (process.platform !== 'darwin' && app.isQuitting) {
       broadcastClient.disconnect();
       sharedMemoryClient.stop();
+      remoteServer.stop();
       app.quit();
     }
   });

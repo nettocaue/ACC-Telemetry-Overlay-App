@@ -15,16 +15,20 @@ export function loadSettings() {
       return {
         activeProfile: DEFAULT_PROFILE,
         profiles: { [DEFAULT_PROFILE]: { widgets: parsed.widgets } },
+        remote: parsed.remote ?? {},
       };
     }
     return {
       activeProfile: parsed.activeProfile ?? DEFAULT_PROFILE,
       profiles: { [DEFAULT_PROFILE]: { widgets: {} }, ...parsed.profiles },
+      // Phone dash server: { enabled, port, token }
+      remote: parsed.remote ?? {},
     };
   } catch {
     return {
       activeProfile: DEFAULT_PROFILE,
       profiles: { [DEFAULT_PROFILE]: { widgets: {} } },
+      remote: {},
     };
   }
 }
