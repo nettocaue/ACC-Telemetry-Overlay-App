@@ -3,6 +3,139 @@ import { useEffect, useState } from 'react';
 import { createElement as h } from 'react';
 import './index.css';
 
+// Phone dash: toggles the local HTTPS server and shows the QR code / URL
+// the phone opens. All the networking lives in the main process.
+function PhonePanel() {
+  const [status, setStatus] = useState(null);
+  const [selectedIp, setSelectedIp] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    window.remote.getStatus().then(setStatus);
+    return window.remote.onStatus(setStatus);
+  }, []);
+
+  if (!status) return null;
+
+  const toggle = async (enabled) => {
+    setStatus(await window.remote.setEnabled(enabled));
+  };
+
+  const addresses = status.addresses ?? [];
+  const address =
+    addresses.find((a) => a.ip === selectedIp) ?? addresses[0] ?? null;
+
+  const copyUrl = async () => {
+    if (!address) return;
+    await navigator.clipboard.writeText(address.url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  let badge;
+  if (!status.enabled) badge = ['disconnected', 'Desligado'];
+  else if (status.error) badge = ['disconnected', 'Erro'];
+  else if (status.clients > 0)
+    badge = [
+      'connected',
+      status.clients === 1
+        ? '1 celular conectado'
+        : `${status.clients} celulares conectados`,
+    ];
+  else badge = ['connecting', 'Aguardando celular…'];
+
+  return h('section', { className: 'panel' }, [
+    h('div', { key: 'row', className: 'panel-header-row' }, [
+      h('h2', { key: 't' }, 'Dash no celular'),
+      h('div', { key: 'right', className: 'header-buttons' }, [
+        h(
+          'span',
+          { key: 'status', className: `status status-${badge[0]}` },
+          badge[1],
+        ),
+        h('label', { key: 'toggle', className: 'switch' }, [
+          h('input', {
+            key: 'input',
+            type: 'checkbox',
+            checked: status.enabled,
+            onChange: (e) => toggle(e.target.checked),
+          }),
+          h('span', { key: 'slider', className: 'switch-slider' }),
+        ]),
+      ]),
+    ]),
+    !status.enabled &&
+      h(
+        'p',
+        { key: 'off' },
+        'Mostra marcha, delta, pneus, combustível e pedais no seu celular, pelo Wi-Fi de casa.',
+      ),
+    status.enabled &&
+      status.error &&
+      h('p', { key: 'error', className: 'error' }, status.error),
+    status.enabled &&
+      !status.error &&
+      !address &&
+      h(
+        'p',
+        { key: 'noip', className: 'error' },
+        'Nenhuma rede encontrada. Conecte o PC ao Wi-Fi ou cabo de rede.',
+      ),
+    status.enabled &&
+      !status.error &&
+      address &&
+      h('div', { key: 'connect', className: 'phone-connect' }, [
+        h('img', {
+          key: 'qr',
+          className: 'phone-qr',
+          alt: 'QR code para abrir a dash no celular',
+          src: `data:image/svg+xml;utf8,${encodeURIComponent(address.qrSvg)}`,
+        }),
+        h('div', { key: 'info', className: 'phone-info' }, [
+          h(
+            'p',
+            { key: 'step1' },
+            '1. Celular e PC na mesma rede Wi-Fi. Aponte a câmera do celular para o QR code.',
+          ),
+          h(
+            'p',
+            { key: 'step2' },
+            '2. Na primeira vez o Chrome avisa que a conexão "não é particular": toque em Avançado → Continuar. É o certificado do próprio app.',
+          ),
+          h(
+            'p',
+            { key: 'step3' },
+            '3. Se o Windows perguntar sobre o Firewall, permita em redes privadas.',
+          ),
+          h('div', { key: 'url', className: 'phone-url-row' }, [
+            h('code', { key: 'code', className: 'phone-url' }, address.url),
+            h(
+              'button',
+              { key: 'copy', onClick: copyUrl },
+              copied ? 'Copiado!' : 'Copiar',
+            ),
+          ]),
+          addresses.length > 1 &&
+            h('label', { key: 'ip', className: 'phone-ip-select' }, [
+              'Rede: ',
+              h(
+                'select',
+                {
+                  key: 'sel',
+                  className: 'profile-select',
+                  value: address.ip,
+                  onChange: (e) => setSelectedIp(e.target.value),
+                },
+                addresses.map((a) =>
+                  h('option', { key: a.ip, value: a.ip }, `${a.ip} (${a.name})`),
+                ),
+              ),
+            ]),
+        ]),
+      ]),
+  ]);
+}
+
 function App() {
   const [status, setStatus] = useState('connecting');
   const [error, setError] = useState(null);
@@ -191,6 +324,8 @@ function App() {
         ),
       ]),
     ]),
+
+    h(PhonePanel, { key: 'phone' }),
 
     h('section', { key: 'profiles', className: 'panel' }, [
       h('div', { key: 'header', className: 'panel-header-row' }, [

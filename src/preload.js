@@ -44,6 +44,12 @@ contextBridge.exposeInMainWorld('overlay', {
   resizeBy: (dx, dy) => ipcRenderer.invoke('overlay:resizeBy', dx, dy),
 });
 
+contextBridge.exposeInMainWorld('remote', {
+  getStatus: () => ipcRenderer.invoke('remote:getStatus'),
+  setEnabled: (enabled) => ipcRenderer.invoke('remote:setEnabled', enabled),
+  onStatus: (cb) => subscribe('remote:status', cb),
+});
+
 contextBridge.exposeInMainWorld('app', {
   getVersion: () => ipcRenderer.invoke('app:version'),
 });

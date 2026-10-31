@@ -103,7 +103,7 @@ function parsePhysics(buf) {
   r.f32(); // cgHeight
   const carDamageArr = r.arrF(5); // front, rear, left, right, centre
   r.i32(); // numberOfTyresOut
-  r.i32(); // pitLimiterOn
+  const pitLimiterOn = r.bool();
   r.f32(); // abs
   r.f32(); // kersCharge (unused)
   r.f32(); // kersInput (unused)
@@ -115,7 +115,7 @@ function parsePhysics(buf) {
   const airTemp = r.f32();
   const roadTemp = r.f32();
   r.arrF(3); // localAngularVel
-  r.f32(); // finalFF
+  const finalFF = r.f32(); // force feedback signal sent to the wheel
   r.f32(); // performanceMeter
   r.i32(); // engineBrake
   r.i32(); // ersRecoveryLevel
@@ -144,8 +144,8 @@ function parsePhysics(buf) {
   r.arrF(4); // my
   r.arrF(4); // slipRatio
   r.arrF(4); // slipAngle
-  r.i32(); // tcinAction
-  r.i32(); // absInAction
+  const tcInAction = r.bool();
+  const absInAction = r.bool();
   r.arrF(4); // suspensionDamage
   const tyreCoreTemp = r.arrF(4); // "Tyres core temperatures" per Kunos docs
   const waterTemp = r.f32();
@@ -186,6 +186,10 @@ function parsePhysics(buf) {
     roadTemp,
     waterTemp,
     isEngineRunning,
+    pitLimiterOn,
+    finalFF,
+    tcInAction,
+    absInAction,
   };
 }
 
@@ -266,7 +270,7 @@ function parseGraphics(buf) {
   r.i32(); // sessionIndex
   const usedFuel = r.f32();
   r.wstring(15, 2); // deltaLapTime + padding
-  r.i32(); // iDeltaLapTime
+  const iDeltaLapTime = r.i32();
   r.wstring(15, 2); // estimatedLapTime + padding
   const iEstimatedLapTime = r.i32();
   const isDeltaPositive = r.bool();
@@ -307,6 +311,7 @@ function parseGraphics(buf) {
     rainIntensityIn30min,
     trackGripStatus,
     usedFuel,
+    iDeltaLapTime,
     iEstimatedLapTime,
     isDeltaPositive,
     isValidLap,
