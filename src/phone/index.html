@@ -24,6 +24,7 @@
           <nav class="tabs">
             <button class="tab is-active" data-view="dash">Dash</button>
             <button class="tab" data-view="wheel">Volante</button>
+            <button class="tab" data-view="pad">Controle</button>
           </nav>
           <span id="session-info" class="session-info"></span>
         </div>
@@ -164,43 +165,43 @@
         </div>
 
         <div class="wheel-center">
-          <div class="wheel-status" id="wheel-status"></div>
+          <div class="wheel-status drive-status" id="wheel-status"></div>
           <div class="wheel-main">
             <div class="shortcuts" id="shortcuts-left">
               <div class="shortcut-pair">
-                <span class="shortcut-value" id="sc-tc">TC -</span>
+                <span class="shortcut-value" data-state="tc">TC -</span>
                 <button class="shortcut" data-button="tcDown">TC −</button>
                 <button class="shortcut" data-button="tcUp">TC +</button>
               </div>
               <div class="shortcut-pair">
-                <span class="shortcut-value" id="sc-abs">ABS -</span>
+                <span class="shortcut-value" data-state="abs">ABS -</span>
                 <button class="shortcut" data-button="absDown">ABS −</button>
                 <button class="shortcut" data-button="absUp">ABS +</button>
               </div>
             </div>
             <div class="wheel-readout">
-              <div class="wheel-gear" id="wheel-gear">N</div>
+              <div class="wheel-gear" data-state="gear">N</div>
               <div class="wheel-speed">
-                <span id="wheel-speed">0</span><span class="unit">km/h</span>
+                <span data-state="speed">0</span><span class="unit">km/h</span>
               </div>
             </div>
             <div class="shortcuts" id="shortcuts-right">
-              <button class="shortcut" data-button="pitLimiter" id="sc-pit">
+              <button class="shortcut" data-button="pitLimiter" data-state="pitLimiter">
                 PIT LIMITER
               </button>
-              <button class="shortcut" data-button="ignition" id="sc-ignition">
+              <button class="shortcut" data-button="ignition" data-state="ignition">
                 IGNIÇÃO
               </button>
-              <button class="shortcut" data-button="starter" id="sc-starter">
+              <button class="shortcut" data-button="starter" data-state="starter">
                 PARTIDA
               </button>
-              <button class="shortcut" data-button="flash" id="sc-flash">
+              <button class="shortcut" data-button="flash" data-state="flash">
                 FAROL
               </button>
               <button
                 class="shortcut shortcut-pit"
                 data-button="pitRequest"
-                id="sc-pit-request"
+                data-state="pitRequest"
               >
                 PEDIR PIT
               </button>
@@ -214,10 +215,10 @@
             <span class="steer-angle" id="steer-angle">0°</span>
           </div>
           <div class="wheel-buttons">
-            <button class="paddle" id="paddle-down">− REDUZIR</button>
+            <button class="paddle" data-shift="-1">− REDUZIR</button>
             <button class="ghost-btn" id="center-btn">Centralizar</button>
-            <button class="ghost-btn" id="settings-btn">Ajustes</button>
-            <button class="paddle" id="paddle-up">SUBIR +</button>
+            <button class="ghost-btn settings-open">Ajustes</button>
+            <button class="paddle" data-shift="1">SUBIR +</button>
           </div>
         </div>
 
@@ -232,10 +233,75 @@
           <p id="wheel-start-text">
             Segure o celular como um volante, na horizontal.
           </p>
-          <p class="start-note" id="start-note"></p>
-          <button class="start-btn" id="start-btn">Começar a pilotar</button>
-          <button class="ghost-btn" id="start-settings-btn">
-            Ajustes e mapeamento no ACC
+          <p class="start-note"></p>
+          <button class="start-btn" data-start="wheel">Começar a pilotar</button>
+          <button class="ghost-btn settings-open">
+            Ajustes e mapeamento no jogo
+          </button>
+        </div>
+      </div>
+
+      <div id="view-pad" class="view view-pad" hidden>
+        <div class="pad-side">
+          <button class="paddle bumper" data-shift="-1">LB · − REDUZIR</button>
+          <div class="stick" id="stick">
+            <div class="stick-ring"></div>
+            <div class="stick-knob" id="stick-knob"></div>
+            <span class="stick-label">DIREÇÃO</span>
+          </div>
+        </div>
+
+        <div class="pad-center">
+          <div class="wheel-status drive-status"></div>
+          <div class="wheel-readout pad-readout">
+            <div class="wheel-gear" data-state="gear">N</div>
+            <div class="wheel-speed">
+              <span data-state="speed">0</span><span class="unit">km/h</span>
+            </div>
+          </div>
+          <div class="shortcuts pad-shortcuts">
+            <span class="shortcut-value" data-state="tc">TC -</span>
+            <span class="shortcut-value" data-state="abs">ABS -</span>
+            <button class="shortcut" data-button="tcDown">TC −</button>
+            <button class="shortcut" data-button="tcUp">TC +</button>
+            <button class="shortcut" data-button="absDown">ABS −</button>
+            <button class="shortcut" data-button="absUp">ABS +</button>
+            <button class="shortcut" data-button="pitLimiter" data-state="pitLimiter">PIT LIM</button>
+            <button class="shortcut" data-button="ignition" data-state="ignition">IGNIÇÃO</button>
+            <button class="shortcut" data-button="starter" data-state="starter">PARTIDA</button>
+            <button class="shortcut" data-button="flash" data-state="flash">FAROL</button>
+            <button class="shortcut shortcut-pit pad-pit" data-button="pitRequest" data-state="pitRequest">PEDIR PIT</button>
+          </div>
+          <button class="ghost-btn settings-open pad-settings">Ajustes</button>
+        </div>
+
+        <div class="pad-side">
+          <button class="paddle bumper" data-shift="1">RB · SUBIR +</button>
+          <div class="pad-pedals">
+            <div class="pedal-slider" data-pedal="brake">
+              <div class="slider-track">
+                <div class="slider-fill fill-brake"></div>
+              </div>
+              <span class="slider-label">FREIO</span>
+            </div>
+            <div class="pedal-slider" data-pedal="gas">
+              <div class="slider-track">
+                <div class="slider-fill fill-gas"></div>
+              </div>
+              <span class="slider-label">ACELERADOR</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="wheel-start" id="pad-start">
+          <p>
+            Segure o celular deitado com os dois polegares: analógico da
+            direção à esquerda, freio e acelerador à direita.
+          </p>
+          <p class="start-note"></p>
+          <button class="start-btn" data-start="pad">Começar a pilotar</button>
+          <button class="ghost-btn settings-open">
+            Ajustes e mapeamento no jogo
           </button>
         </div>
       </div>
@@ -243,7 +309,7 @@
       <div id="settings" class="settings" hidden>
         <div class="settings-panel">
           <div class="settings-header">
-            <h2>Ajustes do volante</h2>
+            <h2>Ajustes do volante e do controle</h2>
             <button class="ghost-btn" id="settings-close">Fechar</button>
           </div>
           <div class="settings-body">

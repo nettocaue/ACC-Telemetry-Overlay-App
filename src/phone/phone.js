@@ -136,6 +136,13 @@
   function setClass(el, name, on) {
     el.classList.toggle(name, Boolean(on));
   }
+  const stateEls = new Map();
+  function state(key, fn) {
+    if (!stateEls.has(key)) {
+      stateEls.set(key, [...document.querySelectorAll(`[data-state="${key}"]`)]);
+    }
+    stateEls.get(key).forEach(fn);
+  }
 
   // --- Static DOM ------------------------------------------------------------
 
@@ -223,18 +230,21 @@
     setClass($('badge-abs'), 'on', t.absActive);
 
     setText($('speed'), String(t.speed));
-    const wheelGear = $('wheel-gear');
-    setText(wheelGear, t.gear < 0 ? 'R' : t.gear === 0 ? 'N' : String(t.gear));
-    setClass(wheelGear, 'limiter', t.pitLimiter);
-    setText($('wheel-speed'), String(t.speed));
+    // Wheel and controller views share these (data-state hooks).
+    const gearText = t.gear < 0 ? 'R' : t.gear === 0 ? 'N' : String(t.gear);
+    state('gear', (el) => {
+      setText(el, gearText);
+      setClass(el, 'limiter', t.pitLimiter);
+    });
+    state('speed', (el) => setText(el, String(t.speed)));
     // Shortcut state shown on the buttons themselves.
-    setText($('sc-tc'), t.tc == null ? 'TC -' : `TC ${t.tc}`);
-    setText($('sc-abs'), t.abs == null ? 'ABS -' : `ABS ${t.abs}`);
-    setClass($('sc-pit'), 'is-on-blue', t.pitLimiter);
-    setClass($('sc-ignition'), 'is-on', t.ignition);
-    setClass($('sc-starter'), 'is-on', t.engineRunning);
-    setClass($('sc-flash'), 'is-on', t.flashing);
-    setClass($('sc-pit-request'), 'is-on', t.pitRequested);
+    state('tc', (el) => setText(el, t.tc == null ? 'TC -' : `TC ${t.tc}`));
+    state('abs', (el) => setText(el, t.abs == null ? 'ABS -' : `ABS ${t.abs}`));
+    state('pitLimiter', (el) => setClass(el, 'is-on-blue', t.pitLimiter));
+    state('ignition', (el) => setClass(el, 'is-on', t.ignition));
+    state('starter', (el) => setClass(el, 'is-on', t.engineRunning));
+    state('flash', (el) => setClass(el, 'is-on', t.flashing));
+    state('pitRequest', (el) => setClass(el, 'is-on', t.pitRequested));
     setText($('position'), t.position > 0 ? `P${t.position}` : 'P-');
 
     // Delta / laps
@@ -353,7 +363,7 @@
   // --- Views (Dash / Volante) ------------------------------------------------
 
   const VIEW_KEY = 'acc-dash-view';
-  const views = { dash: $('view-dash'), wheel: $('view-wheel') };
+  const views = { dash: $('view-dash'), wheel: $('view-wheel'), pad: $('view-pad') };
   let currentView = 'dash';
   const onViewChange = [];
 
@@ -364,7 +374,7 @@
     document.querySelectorAll('.tab').forEach((tab) => {
       tab.classList.toggle('is-active', tab.dataset.view === name);
     });
-    dashEl.classList.toggle('is-wheel', name === 'wheel');
+    dashEl.classList.toggle('is-wheel', name === 'wheel' || name === 'pad');
     try {
       localStorage.setItem(VIEW_KEY, name);
     } catch {
@@ -393,13 +403,13 @@
     },
     {
       key: 'steerDeadzone',
-      label: 'Zona morta do volante',
+      label: 'Zona morta da direção',
       min: 0,
       max: 15,
       step: 0.5,
       def: 2,
       fmt: (v) => `${v}%`,
-      help: 'Ignora pequenas tremidas no centro.',
+      help: 'Ignora pequenas tremidas no centro (volante e analógico).',
     },
     {
       key: 'steerCurve',
@@ -409,7 +419,7 @@
       step: 0.1,
       def: 1.3,
       fmt: (v) => `${Number(v).toFixed(1)}×`,
-      help: 'Maior = mais suave perto do centro, mais rápido nas pontas.',
+      help: 'Maior = mais suave perto do centro, mais rápido nas pontas (volante e analógico).',
     },
     {
       key: 'smoothing',
@@ -444,9 +454,9 @@
   ];
   const TOGGLES = [
     { key: 'shortcuts', label: 'Mostrar atalhos (TC, ABS, pit…)', def: true },
-    { key: 'gestureShift', label: 'Trocar marcha com tranco', def: true },
+    { key: 'gestureShift', label: 'Trocar marcha inclinando (só volante)', def: true },
     { key: 'invertShift', label: 'Inverter direção do tranco', def: false },
-    { key: 'invertSteer', label: 'Inverter volante', def: false },
+    { key: 'invertSteer', label: 'Inverter direção', def: false },
     { key: 'vibrate', label: 'Vibrar ao trocar marcha', def: true },
     {
       key: 'hapticTrack',
@@ -530,8 +540,9 @@
     buildSettingsUi();
     $('settings').hidden = false;
   };
-  $('settings-btn').addEventListener('click', openSettings);
-  $('start-settings-btn').addEventListener('click', openSettings);
+  document
+    .querySelectorAll('.settings-open')
+    .forEach((btn) => btn.addEventListener('click', openSettings));
   $('settings-close').addEventListener('click', () => {
     $('settings').hidden = true;
   });
@@ -704,15 +715,67 @@
     if (!send({ type: 'shift', dir })) return;
     lastShiftAt = performance.now();
     if (settings.vibrate && navigator.vibrate) navigator.vibrate(18);
-    const gearEl = $('wheel-gear');
-    gearEl.classList.add('flash');
-    setTimeout(() => gearEl.classList.remove('flash'), 120);
-    const paddle = $(dir > 0 ? 'paddle-up' : 'paddle-down');
-    paddle.classList.add('hit');
-    setTimeout(() => paddle.classList.remove('hit'), 120);
+    state('gear', (el) => {
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 120);
+    });
+    document.querySelectorAll(`[data-shift="${dir}"]`).forEach((paddle) => {
+      paddle.classList.add('hit');
+      setTimeout(() => paddle.classList.remove('hit'), 120);
+    });
   }
-  $('paddle-up').addEventListener('pointerdown', () => shift(1));
-  $('paddle-down').addEventListener('pointerdown', () => shift(-1));
+  document.querySelectorAll('[data-shift]').forEach((paddle) => {
+    paddle.addEventListener('pointerdown', () => shift(Number(paddle.dataset.shift)));
+  });
+
+  // --- Analog stick (controller view) ------------------------------------
+
+  const stick = { x: 0, pointerId: null };
+  (() => {
+    const zone = $('stick');
+    const knob = $('stick-knob');
+    const move = (e) => {
+      const r = zone.getBoundingClientRect();
+      const radius = Math.min(r.width, r.height) * 0.38;
+      const dx = e.clientX - (r.left + r.width / 2);
+      const dy = e.clientY - (r.top + r.height / 2);
+      const len = Math.hypot(dx, dy);
+      const k = len > radius ? radius / len : 1;
+      stick.x = Math.max(-1, Math.min(1, dx / radius));
+      knob.style.transform = `translate(calc(-50% + ${dx * k}px), calc(-50% + ${dy * k}px))`;
+    };
+    const release = () => {
+      stick.pointerId = null;
+      stick.x = 0;
+      knob.style.transform = 'translate(-50%, -50%)';
+      zone.classList.remove('is-pressed');
+    };
+    zone.addEventListener('pointerdown', (e) => {
+      if (stick.pointerId !== null) return;
+      stick.pointerId = e.pointerId;
+      zone.setPointerCapture(e.pointerId);
+      zone.classList.add('is-pressed');
+      move(e);
+    });
+    zone.addEventListener('pointermove', (e) => {
+      if (e.pointerId === stick.pointerId) move(e);
+    });
+    zone.addEventListener('pointerup', (e) => {
+      if (e.pointerId === stick.pointerId) release();
+    });
+    zone.addEventListener('pointercancel', (e) => {
+      if (e.pointerId === stick.pointerId) release();
+    });
+    zone.addEventListener('lostpointercapture', () => release());
+  })();
+
+  function stickValue() {
+    let x = settings.invertSteer ? -stick.x : stick.x;
+    const dz = settings.steerDeadzone / 100;
+    const mag = Math.abs(x);
+    x = mag <= dz ? 0 : (Math.sign(x) * (mag - dz)) / (1 - dz);
+    return Math.sign(x) * Math.abs(x) ** settings.steerCurve;
+  }
 
   // --- Track vibration (kerbs, off-track, impacts) ----------------------
 
@@ -773,9 +836,9 @@
   // --- Driving loop ------------------------------------------------------------------------
 
   let driving = false;
+  let driveMode = null; // 'wheel' (tilt) | 'pad' (on-screen controller)
 
   function updateWheelStatus() {
-    const el = $('wheel-status');
     let text = '';
     let cls = 'wheel-status';
     const sensorsOk = performance.now() - lastMotionAt < 1000;
@@ -783,7 +846,7 @@
       text = 'Sem conexão com o PC';
       cls += ' error';
     } else if (!controller.enabled) {
-      text = 'Ligue "Usar o celular como volante" no app do PC';
+      text = 'Ligue "Usar o celular como volante/controle" no app do PC';
       cls += ' warn';
     } else if (controller.error) {
       text = controller.error;
@@ -798,24 +861,36 @@
     ) {
       text = `Os atalhos precisam de ${controller.buttonsNeeded || 11} botões no vJoy (hoje: ${controller.buttonCount}). Ajuste no "Configure vJoy".`;
       cls += ' warn';
-    } else if (driving && !sensorsOk) {
+    } else if (driving && driveMode === 'wheel' && !sensorsOk) {
       text = 'Sensores de movimento não estão respondendo';
       cls += ' error';
     } else if (driving) {
       text = 'Pilotando';
       cls += ' ok';
     }
-    if (el.textContent !== text) el.textContent = text;
-    if (el.className !== cls) el.className = cls;
-    // Same warning on the start screen, where it matters before driving.
-    const note = $('start-note');
+    document.querySelectorAll('.drive-status').forEach((el) => {
+      if (el.textContent !== text) el.textContent = text;
+      if (el.className !== `${cls} drive-status`) el.className = `${cls} drive-status`;
+    });
+    // Same warning on the start screens, where it matters before driving.
     const noteText = cls.includes('ok') ? '' : text;
-    if (note.textContent !== noteText) note.textContent = noteText;
-    note.className = `start-note ${cls.includes('error') ? 'error' : 'warn'}`;
+    const noteCls = `start-note ${cls.includes('error') ? 'error' : 'warn'}`;
+    document.querySelectorAll('.start-note').forEach((note) => {
+      if (note.textContent !== noteText) note.textContent = noteText;
+      if (note.className !== noteCls) note.className = noteCls;
+    });
   }
   onControllerChange.push(updateWheelStatus);
 
-  async function startDriving() {
+  async function startDriving(mode) {
+    if (mode === 'pad') {
+      // On-screen controller: no motion sensors involved.
+      goFullscreen();
+      driveMode = 'pad';
+      driving = true;
+      $('pad-start').hidden = true;
+      return;
+    }
     // iOS 13+ needs an explicit permission prompt from a tap.
     // Some browsers expose the API but never settle it without a prompt UI,
     // so don't wait on it forever.
@@ -836,6 +911,7 @@
     }
     window.addEventListener('devicemotion', onMotion);
     goFullscreen();
+    driveMode = 'wheel';
     driving = true;
     $('wheel-start').hidden = true;
     // First start with no saved centre: whatever position the phone is in
@@ -847,15 +923,19 @@
       }
     }, 300);
   }
-  $('start-btn').addEventListener('click', startDriving);
+  document.querySelectorAll('[data-start]').forEach((btn) => {
+    btn.addEventListener('click', () => startDriving(btn.dataset.start));
+  });
 
   function stopDriving() {
     driving = false;
+    driveMode = null;
     window.removeEventListener('devicemotion', onMotion);
     $('wheel-start').hidden = false;
+    $('pad-start').hidden = false;
   }
   onViewChange.push((name) => {
-    if (name !== 'wheel' && driving) stopDriving();
+    if (driving && name !== driveMode) stopDriving();
   });
   document.addEventListener('visibilitychange', () => {
     // Locked screen / switched app: stop sending, the PC releases the pedals.
@@ -864,12 +944,17 @@
 
   let lastSendAt = 0;
   function wheelFrame(now) {
-    if (currentView === 'wheel') {
-      const steer = steeringValue();
-      const dot = $('steer-dot');
-      const left = `${50 + steer.value * 50}%`;
-      if (dot.style.left !== left) dot.style.left = left;
-      setText($('steer-angle'), `${Math.round(steer.deg)}°`);
+    if (currentView === 'wheel' || currentView === 'pad') {
+      let steer;
+      if (currentView === 'wheel') {
+        steer = steeringValue();
+        const dot = $('steer-dot');
+        const left = `${50 + steer.value * 50}%`;
+        if (dot.style.left !== left) dot.style.left = left;
+        setText($('steer-angle'), `${Math.round(steer.deg)}°`);
+      } else {
+        steer = { value: stickValue() };
+      }
 
       if (driving && controller.ready && !controller.busy && now - lastSendAt >= 15) {
         lastSendAt = now;
