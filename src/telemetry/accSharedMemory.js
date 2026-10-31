@@ -78,7 +78,7 @@ function parsePhysics(buf) {
   r.f32(); // roll
   r.f32(); // cgHeight
   const carDamageArr = r.arrF(5); // front, rear, left, right, centre
-  r.i32(); // numberOfTyresOut
+  const numberOfTyresOut = r.i32();
   const pitLimiterOn = r.bool();
   r.f32(); // abs
   r.f32(); // kersCharge (unused)
@@ -133,6 +133,11 @@ function parsePhysics(buf) {
   const ignitionOn = r.bool();
   const starterEngineOn = r.bool();
   const isEngineRunning = r.bool();
+  // "Vibrations sent to the FFB" (ACC 1.7+), used for phone vibration.
+  const kerbVibration = r.f32();
+  const slipVibrations = r.f32();
+  const gVibrations = r.f32();
+  const absVibrations = r.f32();
 
   return {
     packetId,
@@ -162,6 +167,13 @@ function parsePhysics(buf) {
     roadTemp,
     waterTemp,
     isEngineRunning,
+    numberOfTyresOut,
+    kerbVibration,
+    slipVibrations,
+    gVibrations,
+    absVibrations,
+    kerb: Math.max(0, Math.min(1, kerbVibration)),
+    offTrack: numberOfTyresOut >= 2,
     pitLimiterOn,
     ignitionOn,
     starterEngineOn,
@@ -330,6 +342,19 @@ export class AccSharedMemoryClient extends EventEmitter {
     this.lastPacketId = null;
   }
 
+  // ACC has no contact event: a jump in car damage means we hit something.
+  _trackImpacts(physics) {
+    const d = physics.carDamage;
+    const total = d.front + d.rear + d.left + d.right + d.centre;
+    if (this.lastDamage !== undefined && total > this.lastDamage + 0.5) {
+      this.impactCount = (this.impactCount ?? 0) + 1;
+      this.impactStrength = Math.min(1, Math.max(0.2, (total - this.lastDamage) / 20));
+    }
+    this.lastDamage = total;
+    physics.impactCount = this.impactCount ?? 0;
+    physics.impactStrength = this.impactStrength ?? 0;
+  }
+
   _tick() {
     const physicsReady = this.physics.tryOpen();
     const staticReady = this.staticSection.tryOpen();
@@ -338,6 +363,7 @@ export class AccSharedMemoryClient extends EventEmitter {
     try {
       const physicsRaw = this.physics.read();
       const physics = parsePhysics(physicsRaw);
+      this._trackImpacts(physics);
       if (physics.packetId !== this.lastPacketId) {
         this.lastPacketId = physics.packetId;
         this.emit('physics', physics);

@@ -27,6 +27,7 @@ export const SHORTCUT_BUTTONS = {
   ignition: 8,
   starter: 9,
   flash: 10,
+  pitRequest: 11,
 };
 export const BUTTONS_NEEDED = Math.max(...Object.values(SHORTCUT_BUTTONS));
 
@@ -54,6 +55,7 @@ export class PhoneController extends EventEmitter {
       error: this.error,
       ownerId: this.ownerId,
       buttonCount: this.device.buttonCount ?? 0,
+      buttonsNeeded: BUTTONS_NEEDED,
     };
   }
 

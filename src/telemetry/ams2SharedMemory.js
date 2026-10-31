@@ -57,6 +57,7 @@ const O = {
   currentTime: 6724,
   eventTimeRemaining: 6740,
   pitMode: 6808,
+  pitSchedule: 6812,
   carFlags: 6816,
   waterTemp: 6828,
   fuelLevel: 6840,
@@ -70,6 +71,9 @@ const O = {
   steering: 6872,
   gear: 6876,
   antiLockActive: 6888,
+  lastCollisionIndex: 6892,
+  lastCollisionMagnitude: 6896,
+  terrain: 7008,
   tyreTemp: 7072,
   tyreWear: 7136,
   suspensionDamage: 7168,
@@ -115,6 +119,10 @@ const CAR_FLAG = {
   TCS: 1 << 6,
 };
 
+// Terrain enum values (Type#11) for phone vibration.
+const RUMBLE_TERRAIN = new Set([10, 25, 40, 41]);
+const OFFTRACK_TERRAIN = new Set([6, 7, 8, 9, 15, 16, 17, 18, 22, 24, 27, 28, 32, 42, 43]);
+
 const SLOW_EVERY = 3; // graphics at ~20Hz
 const ROSTER_EVERY = 6; // standings at ~10Hz (same as ACC broadcasting)
 const DELTA_SAMPLE_METRES = 5;
@@ -133,7 +141,7 @@ const f32x4 = (buf, o) => [0, 1, 2, 3].map((i) => buf.readFloatLE(o + i * 4));
 const secToMs = (s) => (s > 0 ? Math.round(s * 1000) : INT_MAX);
 
 // AMS2 has rain density (0–1); widgets expect ACC's 0–5 rain intensity.
-function rainLevel(density) {
+export function rainLevel(density) {
   if (!(density > 0.01)) return 0;
   if (density < 0.1) return 1;
   if (density < 0.3) return 2;
@@ -181,6 +189,7 @@ export function parseAms2(buf) {
     currentTime: f32(buf, O.currentTime),
     eventTimeRemaining: f32(buf, O.eventTimeRemaining),
     pitMode: u32(buf, O.pitMode),
+    pitSchedule: u32(buf, O.pitSchedule),
     carFlags: u32(buf, O.carFlags),
     waterTemp: f32(buf, O.waterTemp),
     fuelLevel: f32(buf, O.fuelLevel),
@@ -194,6 +203,9 @@ export function parseAms2(buf) {
     steering: f32(buf, O.steering),
     gear: i32(buf, O.gear),
     antiLockActive: buf[O.antiLockActive] !== 0,
+    lastCollisionIndex: i32(buf, O.lastCollisionIndex),
+    lastCollisionMagnitude: f32(buf, O.lastCollisionMagnitude),
+    terrain: [0, 1, 2, 3].map((i) => u32(buf, O.terrain + i * 4)),
     tyreTemp: f32x4(buf, O.tyreTemp),
     tyreWear: f32x4(buf, O.tyreWear),
     suspensionDamage: f32x4(buf, O.suspensionDamage),
@@ -266,7 +278,7 @@ class DeltaTracker {
 }
 
 // Fuel used this stint and average per lap (AMS2 only gives the tank level).
-class FuelTracker {
+export class FuelTracker {
   constructor() {
     this.reset();
   }
@@ -329,6 +341,10 @@ export class Ams2SharedMemoryClient extends EventEmitter {
     this.fuel = new FuelTracker();
     this.lastRaw = null; // for the diagnostics dump
     this.lastParsed = null;
+    this.impactCount = 0;
+    this.impactStrength = 0;
+    this.lastCollisionMagnitude = null;
+    this.lastDamage = null;
   }
 
   start(intervalMs = 16) {
@@ -391,6 +407,7 @@ export class Ams2SharedMemoryClient extends EventEmitter {
 
       const me = d.participants.find((p) => p.index === d.viewedIndex);
       this._trackLaps(d, me);
+      this._trackImpacts(d);
       this.emit('physics', this._physics(d));
       if (this.tick % SLOW_EVERY === 0) this.emit('graphics', this._graphics(d, me));
       if (this.tick % ROSTER_EVERY === 0) this._emitRoster(d);
@@ -438,6 +455,30 @@ export class Ams2SharedMemoryClient extends EventEmitter {
     this.delta.update(me.lapDistance, d.currentTime, d.lapInvalidated);
   }
 
+  // Contact with another car (AMS2 reports its magnitude) or new damage
+  // from hitting anything else → one "impact" for the phone to vibrate.
+  _trackImpacts(d) {
+    const damage =
+      d.aeroDamage + d.engineDamage + d.suspensionDamage.reduce((a, b) => a + b, 0);
+    let strength = 0;
+    if (
+      this.lastCollisionMagnitude !== null &&
+      d.lastCollisionMagnitude > 0 &&
+      d.lastCollisionMagnitude !== this.lastCollisionMagnitude
+    ) {
+      strength = Math.min(1, d.lastCollisionMagnitude / 1500);
+    }
+    if (this.lastDamage !== null && damage > this.lastDamage + 0.005) {
+      strength = Math.max(strength, Math.min(1, (damage - this.lastDamage) * 8));
+    }
+    if (strength > 0) {
+      this.impactCount++;
+      this.impactStrength = Math.max(0.2, strength);
+    }
+    this.lastCollisionMagnitude = d.lastCollisionMagnitude;
+    this.lastDamage = damage;
+  }
+
   // ACC-shaped "physics" payload (see accSharedMemory.js parsePhysics).
   _physics(d) {
     const flags = d.carFlags;
@@ -479,6 +520,11 @@ export class Ams2SharedMemoryClient extends EventEmitter {
       finalFF: 0, // AMS2 doesn't publish force feedback
       tcInAction: (flags & CAR_FLAG.TCS) !== 0,
       absInAction: d.antiLockActive,
+      // For phone vibration
+      kerb: d.terrain.some((t) => RUMBLE_TERRAIN.has(t)) ? Math.min(1, d.speed / 30) : 0,
+      offTrack: d.terrain.filter((t) => OFFTRACK_TERRAIN.has(t)).length >= 2,
+      impactCount: this.impactCount,
+      impactStrength: this.impactStrength,
     };
   }
 
@@ -502,6 +548,7 @@ export class Ams2SharedMemoryClient extends EventEmitter {
         d.pitMode === PIT_MODE.DRIVING_OUT_OF_PITS ||
         d.pitMode === PIT_MODE.DRIVING_OUT_OF_GARAGE,
       numberOfLaps: d.lapsInEvent,
+      pitRequested: d.pitSchedule === 1, // PIT_SCHEDULE_PLAYER_REQUESTED
       tyreCompound: d.tyreCompound,
       windSpeed: d.windSpeed,
       windDirection: 0,

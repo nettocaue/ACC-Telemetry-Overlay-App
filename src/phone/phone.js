@@ -34,6 +34,7 @@
   // Phone-controller state from the PC: { enabled, ready, error, busy }
   let controller = { enabled: false, ready: false, error: null, busy: false };
   const onControllerChange = [];
+  const onHaptic = [];
 
   function send(msg) {
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -71,6 +72,8 @@
       if (msg.type === 'telemetry') {
         latest = msg;
         dirty = true;
+      } else if (msg.type === 'haptic') {
+        onHaptic.forEach((fn) => fn(msg));
       } else if (msg.type === 'controller') {
         controller = msg;
         onControllerChange.forEach((fn) => fn());
@@ -231,6 +234,7 @@
     setClass($('sc-ignition'), 'is-on', t.ignition);
     setClass($('sc-starter'), 'is-on', t.engineRunning);
     setClass($('sc-flash'), 'is-on', t.flashing);
+    setClass($('sc-pit-request'), 'is-on', t.pitRequested);
     setText($('position'), t.position > 0 ? `P${t.position}` : 'P-');
 
     // Delta / laps
@@ -444,6 +448,11 @@
     { key: 'invertShift', label: 'Inverter direção do tranco', def: false },
     { key: 'invertSteer', label: 'Inverter volante', def: false },
     { key: 'vibrate', label: 'Vibrar ao trocar marcha', def: true },
+    {
+      key: 'hapticTrack',
+      label: 'Vibrar com zebra, saída de pista e batidas',
+      def: true,
+    },
   ];
 
   const defaults = Object.fromEntries(
@@ -705,6 +714,23 @@
   $('paddle-up').addEventListener('pointerdown', () => shift(1));
   $('paddle-down').addEventListener('pointerdown', () => shift(-1));
 
+  // --- Track vibration (kerbs, off-track, impacts) ----------------------
+
+  let lastImpactVibeAt = 0;
+  onHaptic.push((msg) => {
+    if (!driving || !settings.hapticTrack || !navigator.vibrate) return;
+    const now = performance.now();
+    if (msg.kind === 'impact') {
+      lastImpactVibeAt = now;
+      navigator.vibrate(msg.ms);
+      return;
+    }
+    // Don't cut an impact buzz short with a kerb tick.
+    if (now - lastImpactVibeAt < 400) return;
+    if (msg.kind === 'offtrack') navigator.vibrate([30, 25, 30]);
+    else navigator.vibrate(msg.ms);
+  });
+
   // --- Shortcut buttons (held while the finger is down) -----------------
 
   document.querySelectorAll('.shortcut').forEach((btn) => {
@@ -768,9 +794,9 @@
     } else if (
       settings.shortcuts &&
       controller.buttonCount > 0 &&
-      controller.buttonCount < 10
+      controller.buttonCount < (controller.buttonsNeeded || 11)
     ) {
-      text = `Os atalhos precisam de 10 botões no vJoy (hoje: ${controller.buttonCount}). Ajuste no "Configure vJoy".`;
+      text = `Os atalhos precisam de ${controller.buttonsNeeded || 11} botões no vJoy (hoje: ${controller.buttonCount}). Ajuste no "Configure vJoy".`;
       cls += ' warn';
     } else if (driving && !sensorsOk) {
       text = 'Sensores de movimento não estão respondendo';

@@ -25,6 +25,10 @@ const INT_MAX = 2147483647;
 // a new physics packet the phone shows "waiting" instead of frozen values.
 const STALE_AFTER_MS = 2000;
 
+// Phone vibration: how often each effect may fire while it lasts.
+const KERB_EVERY_MS = 100;
+const OFFTRACK_EVERY_MS = 220;
+
 const validLapMs = (ms) => (ms > 0 && ms < INT_MAX ? ms : null);
 
 export function generateToken() {
@@ -95,6 +99,7 @@ export class RemoteServer extends EventEmitter {
 
     this.physics = null;
     this.lastPhysicsAt = 0;
+    this.haptics = { lastKerbAt: 0, lastOffTrackAt: 0, lastImpactCount: null };
     this.graphics = null;
     this.staticData = null;
     this.lapHistory = [];
@@ -161,6 +166,7 @@ export class RemoteServer extends EventEmitter {
   updatePhysics(physics) {
     this.physics = physics;
     this.lastPhysicsAt = Date.now();
+    this._detectHaptics(physics);
   }
 
   updateStatic(staticData) {
@@ -182,6 +188,34 @@ export class RemoteServer extends EventEmitter {
     }
     this.lastCompletedLaps = laps;
     this.graphics = graphics;
+  }
+
+  // Turns kerb / off-track / impact signals (see the game clients) into
+  // short vibration commands for the phone that's driving.
+  _detectHaptics(p) {
+    if (this.clients.size === 0) return;
+    const h = this.haptics;
+    const now = Date.now();
+    const kerb = p.kerb ?? 0;
+    if (kerb > 0.08 && now - h.lastKerbAt >= KERB_EVERY_MS) {
+      h.lastKerbAt = now;
+      this._sendHaptic('kerb', Math.round(10 + kerb * 25));
+    }
+    if (p.offTrack && now - h.lastOffTrackAt >= OFFTRACK_EVERY_MS) {
+      h.lastOffTrackAt = now;
+      this._sendHaptic('offtrack', 70);
+    }
+    const count = p.impactCount ?? 0;
+    if (h.lastImpactCount !== null && count > h.lastImpactCount) {
+      this._sendHaptic('impact', Math.round(120 + (p.impactStrength ?? 0.5) * 330));
+    }
+    // Counts restart when the game (or session) changes: just follow along.
+    h.lastImpactCount = count;
+  }
+
+  _sendHaptic(kind, ms) {
+    const payload = JSON.stringify({ type: 'haptic', kind, ms });
+    for (const client of this.clients) client.send(payload);
   }
 
   // --- Internals -----------------------------------------------------------
@@ -288,7 +322,7 @@ export class RemoteServer extends EventEmitter {
   }
 
   _controllerMessage(client) {
-    const { enabled, ready, error, ownerId, buttonCount } =
+    const { enabled, ready, error, ownerId, buttonCount, buttonsNeeded } =
       this.controllerState;
     return JSON.stringify({
       type: 'controller',
@@ -296,6 +330,7 @@ export class RemoteServer extends EventEmitter {
       ready,
       error,
       buttonCount: buttonCount ?? 0,
+      buttonsNeeded: buttonsNeeded ?? 0,
       // Another phone is currently driving.
       busy: ownerId !== null && ownerId !== client.id,
     });
@@ -331,6 +366,7 @@ export class RemoteServer extends EventEmitter {
       clutch: p?.clutch ?? 0,
       ffb: p?.finalFF ?? 0,
       pitLimiter: Boolean(p?.pitLimiterOn),
+      pitRequested: Boolean(g?.pitRequested),
       ignition: Boolean(p?.ignitionOn),
       engineRunning: Boolean(p?.isEngineRunning),
       tc: g?.tc ?? null,
