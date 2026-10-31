@@ -8,34 +8,10 @@
 //    the PDF alone doesn't specify C struct padding around the wchar_t fields.
 // No code from either source is copied; this is an independent Node/koffi
 // implementation of the same publicly documented memory layout.
-import koffi from 'koffi';
 import { EventEmitter } from 'node:events';
+import { SharedSection } from './sharedSection.js';
 
-const FILE_MAP_READ = 0x0004;
 const NUL_CHAR = String.fromCharCode(0);
-
-// Win32 BOOL is a 4-byte int, not a 1-byte C/C++ bool — using koffi's 'bool'
-// here misaligns the native call and crashes the process (N-API fatal error).
-const kernel32 = koffi.load('kernel32.dll');
-const OpenFileMappingW = kernel32.func(
-  '__stdcall',
-  'OpenFileMappingW',
-  'void *',
-  ['uint32', 'int32', 'wchar_t *'],
-);
-const MapViewOfFile = kernel32.func('__stdcall', 'MapViewOfFile', 'void *', [
-  'void *',
-  'uint32',
-  'uint32',
-  'uint32',
-  'size_t',
-]);
-const UnmapViewOfFile = kernel32.func('__stdcall', 'UnmapViewOfFile', 'int32', [
-  'void *',
-]);
-const CloseHandle = kernel32.func('__stdcall', 'CloseHandle', 'int32', [
-  'void *',
-]);
 
 class Reader {
   constructor(buf) {
@@ -327,47 +303,6 @@ function parseGraphics(buf) {
   };
 }
 
-class SharedSection {
-  constructor(name, size) {
-    this.name = name;
-    this.size = size;
-    this.handle = null;
-    this.view = null;
-  }
-
-  tryOpen() {
-    if (this.view) return true;
-    const handle = OpenFileMappingW(FILE_MAP_READ, 0, this.name);
-    if (!handle) return false;
-    // Pass 0 to map the entire file — requesting an explicit size larger than
-    // what ACC created causes MapViewOfFile to return NULL on Windows, which
-    // was silently preventing the graphics section from ever opening.
-    const view = MapViewOfFile(handle, FILE_MAP_READ, 0, 0, 0);
-    if (!view) {
-      CloseHandle(handle);
-      return false;
-    }
-    this.handle = handle;
-    this.view = view;
-    return true;
-  }
-
-  // koffi.view() creates an external ArrayBuffer, which Electron's V8 build
-  // forbids (crashes the process). koffi.decode() copies bytes instead, so
-  // it's the Electron-safe way to read raw memory through koffi.
-  read() {
-    const bytes = koffi.decode(this.view, 'uint8_t', this.size);
-    return Buffer.from(bytes);
-  }
-
-  close() {
-    if (this.view) UnmapViewOfFile(this.view);
-    if (this.handle) CloseHandle(this.handle);
-    this.view = null;
-    this.handle = null;
-  }
-}
-
 export class AccSharedMemoryClient extends EventEmitter {
   constructor() {
     super();
@@ -401,14 +336,16 @@ export class AccSharedMemoryClient extends EventEmitter {
     if (!physicsReady || !staticReady) return;
 
     try {
-      const physics = parsePhysics(this.physics.read());
+      const physicsRaw = this.physics.read();
+      const physics = parsePhysics(physicsRaw);
       if (physics.packetId !== this.lastPacketId) {
         this.lastPacketId = physics.packetId;
         this.emit('physics', physics);
       }
       // Track name, max fuel/rpm etc. only change between sessions — avoid
       // re-sending the same snapshot to every consumer on every tick.
-      const staticData = parseStatic(this.staticSection.read());
+      const staticRaw = this.staticSection.read();
+      const staticData = parseStatic(staticRaw);
       const staticSnapshot = JSON.stringify(staticData);
       if (staticSnapshot !== this.lastStaticSnapshot) {
         this.lastStaticSnapshot = staticSnapshot;
@@ -416,7 +353,10 @@ export class AccSharedMemoryClient extends EventEmitter {
       }
       const graphicsReady = this.graphicsSection.tryOpen();
       if (graphicsReady) {
-        const graphics = parseGraphics(this.graphicsSection.read());
+        const graphicsRaw = this.graphicsSection.read();
+        const graphics = parseGraphics(graphicsRaw);
+        this.lastRaw = { physics: physicsRaw, static: staticRaw, graphics: graphicsRaw };
+        this.lastParsed = { physics, static: staticData, graphics };
         if (graphics.packetId !== this.lastGraphicsPacketId) {
           this.lastGraphicsPacketId = graphics.packetId;
           this.emit('graphics', graphics);

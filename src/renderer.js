@@ -211,7 +211,65 @@ function PhonePanel() {
   ]);
 }
 
+const GAME_NAMES = {
+  acc: 'Assetto Corsa Competizione',
+  ams2: 'Automobilista 2',
+};
+
+// Which game is feeding data + the diagnostics recorder.
+function GameStatus({ game }) {
+  const [diag, setDiag] = useState(null); // null | 'recording' | { ok, message }
+
+  const record = async () => {
+    setDiag('recording');
+    setDiag(await window.game.recordDiagnostics());
+  };
+
+  return h('div', { className: 'game-status' }, [
+    h('div', { key: 'row', className: 'game-status-row' }, [
+      h('span', { key: 'label', className: 'game-status-label' }, 'Jogo:'),
+      h(
+        'span',
+        {
+          key: 'name',
+          className: `game-status-name${game ? ' game-status-on' : ''}`,
+        },
+        game ? GAME_NAMES[game] : 'nenhum em pista',
+      ),
+      h(
+        'button',
+        {
+          key: 'diag',
+          className: 'link-btn',
+          disabled: diag === 'recording',
+          onClick: record,
+          title:
+            'Grava 5 segundos dos dados lidos do jogo num arquivo, para conferir se os números estão certos.',
+        },
+        diag === 'recording' ? 'Gravando 5 s…' : 'Gravar diagnóstico',
+      ),
+    ]),
+    diag &&
+      diag !== 'recording' &&
+      h(
+        'p',
+        { key: 'msg', className: diag.ok ? 'game-status-msg' : 'error' },
+        diag.message,
+      ),
+    h(
+      'p',
+      { key: 'ams2', className: 'game-status-hint' },
+      'Automobilista 2: em Opções → Sistema, deixe "Memória compartilhada" (Shared Memory) em "Project CARS 2".',
+    ),
+  ]);
+}
+
 function App() {
+  const [game, setGame] = useState(null);
+  useEffect(() => {
+    window.game.get().then(setGame);
+    return window.game.onChanged(setGame);
+  }, []);
   const [status, setStatus] = useState('connecting');
   const [error, setError] = useState(null);
   const [session, setSession] = useState(null);
@@ -351,11 +409,13 @@ function App() {
   const focusedEntry = session ? cars[session.focusedCarIndex] : null;
   const activeDriver = focusedEntry?.drivers?.[focusedEntry.currentDriverIndex];
 
+  // AMS2 has no connection handshake: data flowing means connected.
+  const shownStatus = game === 'ams2' ? 'connected' : status;
   const statusLabel = {
     connected: 'Conectado',
-    connecting: 'Aguardando a ACC…',
+    connecting: 'Aguardando o jogo…',
     disconnected: 'Desconectado',
-  }[status];
+  }[shownStatus];
 
   return h('div', { className: 'app' }, [
     h('header', { key: 'header', className: 'app-header' }, [
@@ -364,7 +424,7 @@ function App() {
         h(
           'p',
           { key: 'subtitle' },
-          'Overlays de telemetria para Assetto Corsa Competizione',
+          'Overlays de telemetria para ACC e Automobilista 2',
         ),
       ]),
       h(
@@ -379,18 +439,19 @@ function App() {
         h('h2', { key: 't' }, 'Conexão'),
         h(
           'span',
-          { key: 'status', className: `status status-${status}` },
+          { key: 'status', className: `status status-${shownStatus}` },
           statusLabel,
         ),
       ]),
       h(
         'p',
         { key: 'hint' },
-        status === 'connected'
-          ? 'Recebendo dados da ACC — pode fechar essa janela, os widgets continuam funcionando.'
-          : 'Sem configuração necessária: basta abrir a ACC e entrar numa sessão. Conecta sozinho assim que o jogo responder.',
+        shownStatus === 'connected'
+          ? `Recebendo dados ${game === 'ams2' ? 'do AMS2' : 'da ACC'} — pode fechar essa janela, os widgets continuam funcionando.`
+          : 'Sem configuração necessária: basta abrir a ACC ou o AMS2 e entrar numa sessão. Conecta sozinho assim que o jogo responder.',
       ),
       error ? h('p', { key: 'error', className: 'error' }, error) : null,
+      h(GameStatus, { key: 'game', game }),
       h('div', { key: 'actions', className: 'actions' }, [
         h(
           'button',

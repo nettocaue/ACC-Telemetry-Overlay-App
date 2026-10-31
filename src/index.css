@@ -344,3 +344,50 @@ button:not(:disabled):hover {
   flex-direction: column;
   gap: 0.3rem;
 }
+
+/* --- Detected game --- */
+
+.game-status {
+  margin: 0.4rem 0 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.game-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.game-status-label {
+  opacity: 0.6;
+}
+
+.game-status-name {
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+.game-status-on {
+  color: #4cd080;
+  opacity: 1;
+}
+
+.game-status-row .link-btn {
+  margin-left: auto;
+}
+
+.game-status-msg {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #4cd080;
+  word-break: break-all;
+}
+
+.game-status-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.5;
+}

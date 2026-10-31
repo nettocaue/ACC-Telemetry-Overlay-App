@@ -52,6 +52,12 @@ contextBridge.exposeInMainWorld('remote', {
   onStatus: (cb) => subscribe('remote:status', cb),
 });
 
+contextBridge.exposeInMainWorld('game', {
+  get: () => ipcRenderer.invoke('game:get'),
+  onChanged: (cb) => subscribe('game:changed', cb),
+  recordDiagnostics: () => ipcRenderer.invoke('diag:record'),
+});
+
 contextBridge.exposeInMainWorld('app', {
   getVersion: () => ipcRenderer.invoke('app:version'),
 });
