@@ -1,6 +1,6 @@
 # Interleigos Telemetry
 
-App da comunidade [Interleigos](https://interleigos.vercel.app/telemetry) com overlays de telemetria, dash no celular e celular como volante para **Assetto Corsa Competizione** e **Automobilista 2** — velocidade, marcha, posição, classificação, pneus, combustível, danos e um traço de pedais/RPM em tempo real, direto na tela enquanto você pilota.
+App da comunidade [Interleigos](https://interleigos.vercel.app/telemetry) com overlays de telemetria, dash no celular e celular como volante para **Assetto Corsa Competizione**, **Automobilista 2** e **Le Mans Ultimate** — velocidade, marcha, posição, classificação, pneus, combustível, danos e um traço de pedais/RPM em tempo real, direto na tela enquanto você pilota.
 
 > ⚠️ **Beta**. Funciona, mas ainda em desenvolvimento ativo.
 
@@ -36,7 +36,7 @@ Use o celular na horizontal e toque em ⛶ para tela cheia.
 
 Na aba **Volante** da página do celular, você pilota inclinando o celular como um volante. O freio e o acelerador são os sliders das laterais. Para trocar de marcha, incline o topo do celular para frente (sobe) ou para trás (reduz), ou use os botões SUBIR/REDUZIR. Ao lado da marcha ficam os atalhos: TC+/−, ABS+/−, pit limiter, ignição, partida e piscar farol.
 
-1. Instale o [vJoy](https://github.com/BrunnerInnovation/vJoy/releases) e reinicie o PC. No "Configure vJoy", o dispositivo 1 precisa dos eixos X, Y e Z e de 10 botões (2 de marcha + 8 de atalhos).
+1. Instale o [vJoy](https://github.com/BrunnerInnovation/vJoy/releases) e reinicie o PC. No "Configure vJoy", o dispositivo 1 precisa dos eixos X, Y e Z e de 11 botões (2 de marcha + 9 de atalhos, incluindo pedir pit).
 2. No app, ligue **Usar o celular como volante (vJoy)**.
 3. No celular, abra a aba **Volante** e toque em **Começar a pilotar**.
 4. No ACC, vá em Opções → Controles e mapeie volante, acelerador, freio, marchas e atalhos usando os botões de **Ajustes → Mapear no ACC / Mapear atalhos**. Cada botão mexe só aquele comando.
@@ -66,10 +66,24 @@ No AMS2 o celular funciona como **controle (gamepad)**, não como volante:
 
 Com o tipo *Volante* o AMS2 reconhece os pedais, mas não gira o volante pelo vJoy.
 
+## Le Mans Ultimate
+
+No LMU, ligue uma vez **Settings → Gameplay → Enable Plugins**. O app lê a memória compartilhada própria do jogo (`LMU_Data`), sem instalar plugin.
+
+- Delta da volta, gap para o líder, TC/ABS/mapa do motor e força no volante vêm direto do jogo.
+- Pneus mostram temperatura (média da superfície), pressão e desgaste; Danos mostram as amassadas por região.
+- Volante pelo celular: mapeie em **Settings → Controls** usando os botões de **Ajustes → Mapear no jogo** do celular.
+
+## Vibração e pit no celular
+
+- Com **Ajustes → Vibrar com zebra, saída de pista e batidas** ligado, o celular vibra em pulsos curtos na zebra, em pulsos duplos fora da pista e com um tranco mais longo nas batidas (ACC, AMS2 e LMU).
+- O atalho **PEDIR PIT** usa o botão 11 do vJoy — configure **11 botões** no Configure vJoy e mapeie o comando de pedir pit do jogo. No AMS2 e no LMU o botão acende quando o pit está pedido.
+
 ## Como funciona
 
 - **Broadcasting Protocol** (UDP) da própria ACC — velocidade, marcha, posição, classificação.
 - **Shared Memory** da ACC — combustível, pneus, dano, pedais e RPM.
+- **Shared Memory do LMU** (`LMU_Data`, estrutura oficial do `SharedMemoryInterface.hpp`) — lida em partes (sessão, classificação e telemetria do jogador).
 - **Shared Memory do AMS2** (`$pcars2$`, formato Project CARS 2, versão 14) — convertida para o mesmo formato da ACC, então os widgets são os mesmos.
 - **Dash no celular** — servidor HTTPS + WebSocket local (porta 8770) servido pelo próprio app, sem dependências extras.
 
@@ -78,7 +92,7 @@ Nenhuma configuração manual de host/porta/senha é necessária: o app cria o `
 ## Requisitos
 
 - Windows 10/11
-- Assetto Corsa Competizione e/ou Automobilista 2
+- Assetto Corsa Competizione, Automobilista 2 e/ou Le Mans Ultimate
 
 ## Publicar uma versão nova
 

@@ -56,7 +56,7 @@ function ControllerSection({ controller, onToggle }) {
         h(
           'li',
           { key: 2 },
-          'Abra o "Configure vJoy": no dispositivo 1, deixe os eixos X, Y e Z ativados e coloque 10 botões (2 para a troca de marcha e 8 para os atalhos: TC, ABS, pit limiter, ignição, partida e farol).',
+          'Abra o "Configure vJoy": no dispositivo 1, deixe os eixos X, Y e Z ativados e coloque 11 botões (2 para a troca de marcha e 9 para os atalhos: TC, ABS, pit limiter, ignição, partida, farol e pedir pit).',
         ),
         h(
           'li',
@@ -214,6 +214,7 @@ function PhonePanel() {
 const GAME_NAMES = {
   acc: 'Assetto Corsa Competizione',
   ams2: 'Automobilista 2',
+  lmu: 'Le Mans Ultimate',
 };
 
 // Which game is feeding data + the diagnostics recorder.
@@ -260,6 +261,11 @@ function GameStatus({ game }) {
       'p',
       { key: 'ams2', className: 'game-status-hint' },
       'Automobilista 2: em Opções → Sistema, deixe "Memória compartilhada" (Shared Memory) em "Project CARS 2".',
+    ),
+    h(
+      'p',
+      { key: 'lmu', className: 'game-status-hint' },
+      'Le Mans Ultimate: em Settings → Gameplay, ligue "Enable Plugins".',
     ),
   ]);
 }
@@ -409,8 +415,8 @@ function App() {
   const focusedEntry = session ? cars[session.focusedCarIndex] : null;
   const activeDriver = focusedEntry?.drivers?.[focusedEntry.currentDriverIndex];
 
-  // AMS2 has no connection handshake: data flowing means connected.
-  const shownStatus = game === 'ams2' ? 'connected' : status;
+  // AMS2/LMU have no connection handshake: data flowing means connected.
+  const shownStatus = game === 'ams2' || game === 'lmu' ? 'connected' : status;
   const statusLabel = {
     connected: 'Conectado',
     connecting: 'Aguardando o jogo…',
@@ -424,7 +430,7 @@ function App() {
         h(
           'p',
           { key: 'subtitle' },
-          'Overlays de telemetria para ACC e Automobilista 2',
+          'Overlays de telemetria para ACC, Automobilista 2 e Le Mans Ultimate',
         ),
       ]),
       h(
@@ -447,8 +453,8 @@ function App() {
         'p',
         { key: 'hint' },
         shownStatus === 'connected'
-          ? `Recebendo dados ${game === 'ams2' ? 'do AMS2' : 'da ACC'} — pode fechar essa janela, os widgets continuam funcionando.`
-          : 'Sem configuração necessária: basta abrir a ACC ou o AMS2 e entrar numa sessão. Conecta sozinho assim que o jogo responder.',
+          ? `Recebendo dados ${{ ams2: 'do AMS2', lmu: 'do LMU' }[game] ?? 'da ACC'} — pode fechar essa janela, os widgets continuam funcionando.`
+          : 'Basta abrir a ACC, o AMS2 ou o LMU e entrar numa sessão. Conecta sozinho assim que o jogo responder.',
       ),
       error ? h('p', { key: 'error', className: 'error' }, error) : null,
       h(GameStatus, { key: 'game', game }),

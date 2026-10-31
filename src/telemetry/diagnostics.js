@@ -13,14 +13,14 @@ const toBase64 = (buf) => (buf ? Buffer.from(buf).toString('base64') : null);
 const snapshot = (client) =>
   client.lastParsed ? structuredClone(client.lastParsed) : null;
 
-export async function recordDiagnostics({ app, activeGame, accClient, ams2Client }) {
+export async function recordDiagnostics({ app, activeGame, accClient, ams2Client, lmuClient }) {
   if (!activeGame) {
     return {
       ok: false,
-      message: 'Nenhum jogo detectado. Entre na pista (ACC ou AMS2) e tente de novo.',
+      message: 'Nenhum jogo detectado. Entre na pista (ACC, AMS2 ou LMU) e tente de novo.',
     };
   }
-  const client = activeGame === 'ams2' ? ams2Client : accClient;
+  const client = { ams2: ams2Client, lmu: lmuClient }[activeGame] ?? accClient;
   const samples = [];
   const started = Date.now();
   await new Promise((resolve) => {
@@ -36,7 +36,9 @@ export async function recordDiagnostics({ app, activeGame, accClient, ams2Client
   const raw =
     activeGame === 'ams2'
       ? { pcars2: toBase64(ams2Client.lastRaw) }
-      : {
+      : activeGame === 'lmu'
+        ? { scoringInfoAndPlayerTelemetry: toBase64(lmuClient.lastRaw) }
+        : {
           physics: toBase64(accClient.lastRaw?.physics),
           graphics: toBase64(accClient.lastRaw?.graphics),
           static: toBase64(accClient.lastRaw?.static),

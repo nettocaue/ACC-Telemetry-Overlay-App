@@ -14,6 +14,7 @@ import started from 'electron-squirrel-startup';
 import { AccBroadcastClient } from './broadcast/accBroadcastClient.js';
 import { AccSharedMemoryClient } from './telemetry/accSharedMemory.js';
 import { Ams2SharedMemoryClient } from './telemetry/ams2SharedMemory.js';
+import { LmuSharedMemoryClient } from './telemetry/lmuSharedMemory.js';
 import { recordDiagnostics } from './telemetry/diagnostics.js';
 import { loadSettings, saveSettings } from './config/settingsStore.js';
 import { ensureBroadcastingConfig } from './config/accConfig.js';
@@ -51,6 +52,7 @@ function runApp() {
   const broadcastClient = new AccBroadcastClient();
   const sharedMemoryClient = new AccSharedMemoryClient();
   const ams2Client = new Ams2SharedMemoryClient();
+  const lmuClient = new LmuSharedMemoryClient();
   // `settings` is the live, possibly-unsaved state the overlays render from;
   // `savedSettings` mirrors what's on disk. Widget toggles and geometry only
   // touch `settings` until the user hits "Salvar" for the active profile.
@@ -198,35 +200,39 @@ function runApp() {
   );
   sharedMemoryClient.start(16); // ~60Hz — matches frame rate, minimizes pedal/RPM trace lag
 
-  // --- Automobilista 2 ------------------------------------------------------
-  // The AMS2 client emits the same payloads as the ACC clients, so it feeds
-  // the very same channels: every widget and the phone work for both games.
-  ams2Client.on('physics', (data) => sendToPhysicsWidgets('acc:physics', data));
-  ams2Client.on('static', (data) =>
-    sendToAllPhysicsWidgets('acc:staticTelemetry', data),
-  );
-  ams2Client.on('graphics', (data) => broadcastToWindows('acc:graphics', data));
-  ams2Client.on('realtimeUpdate', (data) =>
-    broadcastToWindows('acc:realtimeUpdate', data),
-  );
-  ams2Client.on('realtimeCarUpdate', (data) =>
-    broadcastToWindows('acc:realtimeCarUpdate', data),
-  );
-  ams2Client.on('entryList', (data) => {
-    const current = new Set(data.carIndices);
-    for (const idx of entryListCache.keys()) {
-      if (!current.has(idx)) entryListCache.delete(idx);
-    }
-    broadcastToWindows('acc:entryList', data);
-  });
-  ams2Client.on('entryListCar', (data) => {
-    entryListCache.set(data.carIndex, data);
-    broadcastToWindows('acc:entryListCar', data);
-  });
-  ams2Client.on('error', (err) =>
-    broadcastToWindows('acc:sharedMemoryError', err.message),
-  );
-  ams2Client.start(16);
+  // --- Automobilista 2 and Le Mans Ultimate ---------------------------------
+  // These clients emit the same payloads as the ACC clients, so they feed
+  // the very same channels: every widget and the phone work for all games.
+  const wireSimClient = (client) => {
+    client.on('physics', (data) => sendToPhysicsWidgets('acc:physics', data));
+    client.on('static', (data) =>
+      sendToAllPhysicsWidgets('acc:staticTelemetry', data),
+    );
+    client.on('graphics', (data) => broadcastToWindows('acc:graphics', data));
+    client.on('realtimeUpdate', (data) =>
+      broadcastToWindows('acc:realtimeUpdate', data),
+    );
+    client.on('realtimeCarUpdate', (data) =>
+      broadcastToWindows('acc:realtimeCarUpdate', data),
+    );
+    client.on('entryList', (data) => {
+      const current = new Set(data.carIndices);
+      for (const idx of entryListCache.keys()) {
+        if (!current.has(idx)) entryListCache.delete(idx);
+      }
+      broadcastToWindows('acc:entryList', data);
+    });
+    client.on('entryListCar', (data) => {
+      entryListCache.set(data.carIndex, data);
+      broadcastToWindows('acc:entryListCar', data);
+    });
+    client.on('error', (err) =>
+      broadcastToWindows('acc:sharedMemoryError', err.message),
+    );
+    client.start(16);
+  };
+  wireSimClient(ams2Client);
+  wireSimClient(lmuClient);
 
   // Which game is feeding data right now (shown in the main window).
   const GAME_TIMEOUT_MS = 2000;
@@ -238,7 +244,9 @@ function runApp() {
   const updateActiveGame = () => {
     const game = ams2Client.active
       ? 'ams2'
-      : Date.now() - lastAccPhysicsAt < GAME_TIMEOUT_MS
+      : lmuClient.active
+        ? 'lmu'
+        : Date.now() - lastAccPhysicsAt < GAME_TIMEOUT_MS
         ? 'acc'
         : null;
     if (game === activeGame) return;
@@ -246,6 +254,7 @@ function runApp() {
     mainWindow?.webContents.send('game:changed', game);
   };
   ams2Client.on('active', updateActiveGame);
+  lmuClient.on('active', updateActiveGame);
   setInterval(updateActiveGame, 500);
   ipcMain.handle('game:get', () => activeGame);
 
@@ -257,6 +266,7 @@ function runApp() {
       activeGame,
       accClient: sharedMemoryClient,
       ams2Client,
+      lmuClient,
     }),
   );
 
@@ -272,6 +282,9 @@ function runApp() {
   ams2Client.on('physics', (data) => remoteServer.updatePhysics(data));
   ams2Client.on('static', (data) => remoteServer.updateStatic(data));
   ams2Client.on('graphics', (data) => remoteServer.updateGraphics(data));
+  lmuClient.on('physics', (data) => remoteServer.updatePhysics(data));
+  lmuClient.on('static', (data) => remoteServer.updateStatic(data));
+  lmuClient.on('graphics', (data) => remoteServer.updateGraphics(data));
 
   // Phone as a wheel: opt-in, because it needs the vJoy driver installed.
   const phoneController = new PhoneController({ device: new VJoyDevice(1) });
@@ -901,6 +914,7 @@ function runApp() {
       broadcastClient.disconnect();
       sharedMemoryClient.stop();
       ams2Client.stop();
+      lmuClient.stop();
       phoneController.disable();
       remoteServer.stop();
       app.quit();

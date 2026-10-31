@@ -1009,7 +1009,7 @@ body {
   color: var(--text);
   font-weight: 800;
   font-size: 2.4vh;
-  padding: 2.4vh 0.6vw;
+  padding: 2vh 0.6vw;
   touch-action: none;
   white-space: nowrap;
 }
@@ -1022,6 +1022,11 @@ body {
 .shortcut.is-on {
   border-color: var(--green);
   color: var(--green);
+}
+
+.shortcut-pit {
+  border-color: rgba(240, 192, 0, 0.45);
+  color: #f0c000;
 }
 
 .shortcut.is-on-blue {

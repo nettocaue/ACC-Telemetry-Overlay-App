@@ -60,6 +60,13 @@ export class SharedSection {
     return Buffer.from(bytes);
   }
 
+  // Copies `size` bytes starting at `offset` — for big sections (LMU's is
+  // ~320 KB) where only a few slices are needed each tick.
+  readAt(offset, size) {
+    const bytes = koffi.decode(this.view, offset, 'uint8_t', size);
+    return Buffer.from(bytes);
+  }
+
   close() {
     if (this.view) UnmapViewOfFile(this.view);
     if (this.handle) CloseHandle(this.handle);
