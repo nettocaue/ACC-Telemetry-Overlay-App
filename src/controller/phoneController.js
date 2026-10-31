@@ -5,7 +5,7 @@
 // matters, so the pedals drop to zero the moment input stops arriving (Wi-Fi
 // hiccup, phone locked, app closed) — see INPUT_TIMEOUT_MS.
 import { EventEmitter } from 'node:events';
-import { AXIS } from './vJoy.js';
+import { AXIS, EXTRA_AXIS } from './vJoy.js';
 
 const INPUT_TIMEOUT_MS = 400; // no input for this long → pedals released
 const OWNER_TIMEOUT_MS = 3000; // another phone may take over after this
@@ -30,6 +30,28 @@ export const SHORTCUT_BUTTONS = {
   pitRequest: 11,
 };
 export const BUTTONS_NEEDED = Math.max(...Object.values(SHORTCUT_BUTTONS));
+
+// The full on-screen controller (Controle tab). LB/RB double as the shift
+// buttons so racing mappings keep working; the rest come after the
+// shortcuts. Held while the finger is down, like a real pad.
+export const PAD_BUTTONS = {
+  rb: BUTTON.SHIFT_UP,
+  lb: BUTTON.SHIFT_DOWN,
+  a: 12,
+  b: 13,
+  x: 14,
+  y: 15,
+  select: 16,
+  start: 17,
+  up: 18,
+  down: 19,
+  left: 20,
+  right: 21,
+};
+export const PAD_BUTTONS_NEEDED = Math.max(...Object.values(PAD_BUTTONS));
+const ALL_BUTTONS = { ...SHORTCUT_BUTTONS, ...PAD_BUTTONS };
+// Second stick + left stick vertical. Centre = 0.5.
+const PAD_AXES = { ly: EXTRA_AXIS.RX, rx: EXTRA_AXIS.RY, ry: EXTRA_AXIS.RZ };
 
 const clamp = (v, min, max) =>
   Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : 0;
@@ -56,6 +78,8 @@ export class PhoneController extends EventEmitter {
       ownerId: this.ownerId,
       buttonCount: this.device.buttonCount ?? 0,
       buttonsNeeded: BUTTONS_NEEDED,
+      padButtonsNeeded: PAD_BUTTONS_NEEDED,
+      padAxes: this.device.extraAxes ? this.device.extraAxes.size : 0,
     };
   }
 
@@ -89,13 +113,19 @@ export class PhoneController extends EventEmitter {
 
   // --- Input from phones ---------------------------------------------------
 
-  handleInput(clientId, { steer, gas, brake }) {
+  handleInput(clientId, { steer, gas, brake, ly, rx, ry }) {
     if (!this._canDrive(clientId) || this.binding) return;
     this.lastInputAt = Date.now();
     this.released = false;
     this.device.setAxis(AXIS.X, (clamp(steer, -1, 1) + 1) / 2);
     this.device.setAxis(AXIS.Y, clamp(gas, 0, 1));
     this.device.setAxis(AXIS.Z, clamp(brake, 0, 1));
+    // Only the Controle tab sends these (-1..1, centre 0).
+    for (const [key, value] of Object.entries({ ly, rx, ry })) {
+      if (value !== undefined) {
+        this.device.setAxis(PAD_AXES[key], (clamp(value, -1, 1) + 1) / 2);
+      }
+    }
   }
 
   handleShift(clientId, dir) {
@@ -105,8 +135,9 @@ export class PhoneController extends EventEmitter {
   }
 
   handleButton(clientId, id, pressed) {
-    const button = SHORTCUT_BUTTONS[id];
+    const button = ALL_BUTTONS[id];
     if (!button || !this._canDrive(clientId) || this.binding) return;
+    if (button > (this.device.buttonCount ?? 0)) return;
     this.lastInputAt = Date.now();
     if (pressed) this.released = false;
     this.device.setButton(button, pressed);
@@ -128,6 +159,7 @@ export class PhoneController extends EventEmitter {
       'steerRight',
       'gas',
       'brake',
+      ...Object.keys(PAD_AXES),
       ...Object.keys(pulses),
     ];
     if (!valid.includes(target)) return;
@@ -176,9 +208,10 @@ export class PhoneController extends EventEmitter {
     this.device.setAxis(AXIS.X, 0.5);
     this.device.setAxis(AXIS.Y, 0);
     this.device.setAxis(AXIS.Z, 0);
+    for (const usage of Object.values(PAD_AXES)) this.device.setAxis(usage, 0.5);
     this.device.setButton(BUTTON.SHIFT_UP, false);
     this.device.setButton(BUTTON.SHIFT_DOWN, false);
-    for (const button of Object.values(SHORTCUT_BUTTONS)) {
+    for (const button of new Set(Object.values(ALL_BUTTONS))) {
       if (button <= (this.device.buttonCount ?? 0)) {
         this.device.setButton(button, false);
       }
@@ -208,6 +241,9 @@ export class PhoneController extends EventEmitter {
         this.device.setAxis(AXIS.X, 0.5 - 0.5 * wave);
       } else if (this.binding.target === 'steerRight') {
         this.device.setAxis(AXIS.X, 0.5 + 0.5 * wave);
+      } else if (PAD_AXES[this.binding.target]) {
+        // Stick axes: centre → one end → centre.
+        this.device.setAxis(PAD_AXES[this.binding.target], 0.5 + 0.5 * wave);
       } else {
         this.device.setAxis(this.binding.target === 'gas' ? AXIS.Y : AXIS.Z, wave);
       }

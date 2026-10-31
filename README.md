@@ -36,7 +36,21 @@ Use o celular na horizontal e toque em ⛶ para tela cheia.
 
 Na aba **Volante** da página do celular, você pilota inclinando o celular como um volante. O freio e o acelerador são os sliders das laterais. Para trocar de marcha, incline o topo do celular para frente (sobe) ou para trás (reduz), ou use os botões SUBIR/REDUZIR. Ao lado da marcha ficam os atalhos: TC+/−, ABS+/−, pit limiter, ignição, partida, piscar farol e pedir pit.
 
-Prefere jogar com os polegares? A aba **Controle** vira um gamepad na tela: analógico da direção à esquerda, freio e acelerador à direita, LB/RB para reduzir e subir marcha e os mesmos atalhos no meio. Não usa os sensores de movimento, e o vJoy e o mapeamento no jogo são os mesmos do volante.
+Prefere jogar com os polegares? A aba **Controle** vira um controle completo na tela, no estilo de um gamepad: analógico esquerdo (movimento/direção), analógico direito (câmera), setas, A/B/X/Y, LB/RB, LT/RT, Select e Start, além dos atalhos de corrida no meio. Serve para os jogos de corrida e para qualquer outro jogo que aceite joystick (DirectInput). LT freia e RT acelera; para dosar acelerador e freio, ligue em Ajustes **"Controle: analógico direito acelera (↑) e freia (↓)"**.
+
+Para o controle completo, no "Configure vJoy" ative também os eixos **Rx, Ry e Rz** e coloque **21 botões**:
+
+| Controle | vJoy |
+| --- | --- |
+| Analógico esquerdo ↔ / ↕ | Eixo X / Eixo Rx |
+| Analógico direito ↔ / ↕ | Eixo Ry / Eixo Rz |
+| RT / LT | Eixo Y / Eixo Z |
+| RB / LB | Botões 1 / 2 (mesmos de subir/reduzir marcha) |
+| Atalhos de corrida | Botões 3 a 11 |
+| A, B, X, Y | Botões 12, 13, 14, 15 |
+| Select, Start | Botões 16, 17 |
+| Setas ↑ ↓ ← → | Botões 18, 19, 20, 21 |
+
 
 1. Instale o [vJoy](https://github.com/BrunnerInnovation/vJoy/releases) e reinicie o PC. No "Configure vJoy", o dispositivo 1 precisa dos eixos X, Y e Z e de 11 botões (2 de marcha + 9 de atalhos, incluindo pedir pit).
 2. No app, ligue **Usar o celular como volante/controle (vJoy)**.

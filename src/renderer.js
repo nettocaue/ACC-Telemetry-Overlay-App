@@ -56,7 +56,7 @@ function ControllerSection({ controller, onToggle }) {
         h(
           'li',
           { key: 2 },
-          'Abra o "Configure vJoy": no dispositivo 1, deixe os eixos X, Y e Z ativados e coloque 11 botões (2 para a troca de marcha e 9 para os atalhos: TC, ABS, pit limiter, ignição, partida, farol e pedir pit).',
+          'Abra o "Configure vJoy": no dispositivo 1, deixe os eixos X, Y e Z ativados e coloque 11 botões (2 para a troca de marcha e 9 para os atalhos: TC, ABS, pit limiter, ignição, partida, farol e pedir pit). Para o controle completo da aba Controle, ative também os eixos Rx, Ry e Rz e coloque 21 botões.',
         ),
         h(
           'li',
