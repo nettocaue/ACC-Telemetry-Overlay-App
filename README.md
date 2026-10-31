@@ -1,6 +1,6 @@
 # ACC Telemetry Overlay App
 
-Overlays de telemetria para **Assetto Corsa Competizione** — velocidade, marcha, posição, classificação, pneus, combustível, danos e um traço de pedais/RPM em tempo real, direto na tela enquanto você pilota.
+Overlays de telemetria para **Assetto Corsa Competizione** e **Automobilista 2** — velocidade, marcha, posição, classificação, pneus, combustível, danos e um traço de pedais/RPM em tempo real, direto na tela enquanto você pilota.
 
 > ⚠️ **Beta**. Funciona, mas ainda em desenvolvimento ativo.
 
@@ -41,10 +41,23 @@ Na aba **Volante** da página do celular, você pilota inclinando o celular como
 
 Por segurança, se o celular parar de mandar comandos (Wi-Fi caiu, tela apagou, app fechado), o PC solta o acelerador e o freio na hora.
 
+## Automobilista 2
+
+O app detecta sozinho qual jogo está em pista. Para o AMS2, ative a memória compartilhada uma vez no jogo: **Opções → Sistema → Memória compartilhada (Shared Memory) → Project CARS 2**.
+
+Todos os widgets e a dash no celular funcionam no AMS2. Diferenças em relação à ACC:
+- **Delta da volta** e **consumo por volta** são calculados pelo app (o AMS2 não publica esses valores). O delta usa a melhor volta válida da sessão; o consumo aparece a partir da 2ª volta completa.
+- **Pneus** mostram o desgaste real (a ACC só informa as pastilhas de freio).
+- **Danos**: aerodinâmica, motor e suspensão de cada lado.
+- **Não disponíveis no AMS2**: força no volante, previsão de chuva e aderência da pista.
+
+Se algum número parecer errado, use **Gravar diagnóstico** na janela principal: o app salva 5 segundos dos dados lidos num arquivo em `Documentos/ACC Telemetry App/diagnostico`.
+
 ## Como funciona
 
 - **Broadcasting Protocol** (UDP) da própria ACC — velocidade, marcha, posição, classificação.
 - **Shared Memory** da ACC — combustível, pneus, dano, pedais e RPM.
+- **Shared Memory do AMS2** (`$pcars2$`, formato Project CARS 2, versão 14) — convertida para o mesmo formato da ACC, então os widgets são os mesmos.
 - **Dash no celular** — servidor HTTPS + WebSocket local (porta 8770) servido pelo próprio app, sem dependências extras.
 
 Nenhuma configuração manual de host/porta/senha é necessária: o app cria o `broadcasting.json` da ACC sozinho na primeira vez, se ele ainda não existir.
@@ -52,7 +65,7 @@ Nenhuma configuração manual de host/porta/senha é necessária: o app cria o `
 ## Requisitos
 
 - Windows 10/11
-- Assetto Corsa Competizione
+- Assetto Corsa Competizione e/ou Automobilista 2
 
 ## Publicar uma versão nova
 

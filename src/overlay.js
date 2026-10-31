@@ -226,7 +226,7 @@ function StandingsWidget() {
         h(
           'span',
           { key: 'num', className: 'standings-num' },
-          entry ? `#${entry.raceNumber}` : '',
+          entry?.raceNumber != null ? `#${entry.raceNumber}` : '',
         ),
         h(
           'span',
@@ -242,6 +242,10 @@ function StandingsWidget() {
 
   const items = [];
   for (const { cat, cars: catCars } of groups) {
+    // AMS2 entries carry the real class name (GT3, GT4…); ACC uses cup names.
+    const className = catCars
+      .map((c) => entries[c.carIndex]?.className)
+      .find(Boolean);
     if (multiClass) {
       items.push(
         h(
@@ -251,7 +255,7 @@ function StandingsWidget() {
             className: 'standings-class-hdr',
             style: { borderLeftColor: CUP_COLORS[cat] ?? '#e8201c' },
           },
-          CUP_NAMES[cat] ?? `Cat ${cat}`,
+          className ?? CUP_NAMES[cat] ?? `Cat ${cat}`,
         ),
       );
     }
@@ -479,6 +483,12 @@ function TyresWidget() {
           physics.padLife?.[i] > 0
             ? `${physics.padLife[i].toFixed(1)} mm`
             : '--';
+        // AMS2 publishes real tyre wear; ACC only brake pad thickness.
+        const wear = physics.tyreWearFrac?.[i];
+        const footer =
+          wear != null
+            ? `Desgaste ${Math.round(wear * 100)}%`
+            : `Pastilha ${pad}`;
         const color = tyreTempColor(temp);
         return h('div', { key: label, className: 'tyre-cell' }, [
           h(
@@ -498,7 +508,7 @@ function TyresWidget() {
           ),
           // ACC doesn't expose tyre wear, but it does report brake pad
           // thickness in mm (a new pad starts around 29 mm).
-          h('div', { key: 'pad', className: 'tyre-pad' }, `Pastilha ${pad}`),
+          h('div', { key: 'pad', className: 'tyre-pad' }, footer),
         ]);
       }),
     ),
@@ -538,7 +548,7 @@ function FuelWidget() {
         lapsRemaining != null ? lapsRemaining.toFixed(1) : '--',
       ),
       row(
-        'Est. ACC',
+        'Est. jogo',
         fuelEst != null && fuelEst > 0 ? fuelEst.toFixed(1) : '--',
       ),
       row('Usado stint', usedFuel > 0.1 ? `${usedFuel.toFixed(1)} L` : '--'),
@@ -549,7 +559,8 @@ function FuelWidget() {
 function DamageWidget() {
   const physics = usePhysics();
   const damage = physics?.carDamage;
-  const parts = [
+  // Games other than ACC report different damage areas, already labelled.
+  const parts = physics?.damageParts ?? [
     ['Frente', damage?.front],
     ['Traseira', damage?.rear],
     ['Esquerda', damage?.left],
