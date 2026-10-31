@@ -21,6 +21,10 @@
       <header class="topbar">
         <div class="topbar-left">
           <span class="brand">ACC<span class="brand-accent">DASH</span></span>
+          <nav class="tabs">
+            <button class="tab is-active" data-view="dash">Dash</button>
+            <button class="tab" data-view="wheel">Volante</button>
+          </nav>
           <span id="session-info" class="session-info"></span>
         </div>
         <div id="shift-lights" class="shift-lights"></div>
@@ -32,6 +36,7 @@
         </div>
       </header>
 
+      <div id="view-dash" class="view view-dash">
       <section class="grid">
         <div class="col">
           <div class="card card-delta">
@@ -148,6 +153,89 @@
           <span id="val-ffb" class="pedal-val">0%</span>
         </div>
       </footer>
+      </div>
+
+      <div id="view-wheel" class="view view-wheel" hidden>
+        <div class="pedal-slider" id="slider-brake" data-pedal="brake">
+          <div class="slider-track">
+            <div class="slider-fill fill-brake"></div>
+          </div>
+          <span class="slider-label">FREIO</span>
+        </div>
+
+        <div class="wheel-center">
+          <div class="wheel-status" id="wheel-status"></div>
+          <div class="wheel-readout">
+            <div class="wheel-gear" id="wheel-gear">N</div>
+            <div class="wheel-speed">
+              <span id="wheel-speed">0</span><span class="unit">km/h</span>
+            </div>
+          </div>
+          <div class="steer-meter">
+            <div class="steer-track">
+              <div class="steer-center-mark"></div>
+              <div class="steer-dot" id="steer-dot"></div>
+            </div>
+            <span class="steer-angle" id="steer-angle">0°</span>
+          </div>
+          <div class="wheel-buttons">
+            <button class="paddle" id="paddle-down">− REDUZIR</button>
+            <button class="ghost-btn" id="center-btn">Centralizar</button>
+            <button class="ghost-btn" id="settings-btn">Ajustes</button>
+            <button class="paddle" id="paddle-up">SUBIR +</button>
+          </div>
+        </div>
+
+        <div class="pedal-slider" id="slider-gas" data-pedal="gas">
+          <div class="slider-track">
+            <div class="slider-fill fill-gas"></div>
+          </div>
+          <span class="slider-label">ACELERADOR</span>
+        </div>
+
+        <div class="wheel-start" id="wheel-start">
+          <p id="wheel-start-text">
+            Segure o celular como um volante, na horizontal.
+          </p>
+          <p class="start-note" id="start-note"></p>
+          <button class="start-btn" id="start-btn">Começar a pilotar</button>
+          <button class="ghost-btn" id="start-settings-btn">
+            Ajustes e mapeamento no ACC
+          </button>
+        </div>
+      </div>
+
+      <div id="settings" class="settings" hidden>
+        <div class="settings-panel">
+          <div class="settings-header">
+            <h2>Ajustes do volante</h2>
+            <button class="ghost-btn" id="settings-close">Fechar</button>
+          </div>
+          <div class="settings-body">
+            <div class="settings-col" id="settings-sliders"></div>
+            <div class="settings-col">
+              <div class="settings-toggles" id="settings-toggles"></div>
+              <h3>Mapear no ACC</h3>
+              <p class="settings-hint">
+                No ACC, vá em Opções → Controles, clique no comando e toque
+                no botão correspondente aqui. Só aquele comando se mexe.
+              </p>
+              <div class="bind-buttons">
+                <button class="ghost-btn" data-bind="steer">Volante</button>
+                <button class="ghost-btn" data-bind="gas">Acelerador</button>
+                <button class="ghost-btn" data-bind="brake">Freio</button>
+                <button class="ghost-btn" data-bind="shiftUp">Subir marcha</button>
+                <button class="ghost-btn" data-bind="shiftDown">
+                  Reduzir marcha
+                </button>
+              </div>
+              <button class="ghost-btn reset-btn" id="settings-reset">
+                Restaurar padrões
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div id="waiting" class="waiting">
         <p id="waiting-text">Aguardando a ACC…</p>

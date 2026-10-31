@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld('overlay', {
 contextBridge.exposeInMainWorld('remote', {
   getStatus: () => ipcRenderer.invoke('remote:getStatus'),
   setEnabled: (enabled) => ipcRenderer.invoke('remote:setEnabled', enabled),
+  setController: (enabled) =>
+    ipcRenderer.invoke('remote:setController', enabled),
   onStatus: (cb) => subscribe('remote:status', cb),
 });
 
