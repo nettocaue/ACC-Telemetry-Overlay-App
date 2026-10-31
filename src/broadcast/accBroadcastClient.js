@@ -134,7 +134,7 @@ export class AccBroadcastClient extends EventEmitter {
     const {
       host = '127.0.0.1',
       port = 9000,
-      displayName = 'ACC Telemetry App',
+      displayName = 'Interleigos Telemetry',
       connectionPassword = '',
       commandPassword = '',
       updateIntervalMs = 100,

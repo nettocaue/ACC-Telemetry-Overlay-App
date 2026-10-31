@@ -80,7 +80,7 @@ function toPem(label, der) {
 }
 
 export function generateSelfSignedCert({
-  commonName = 'ACC Telemetry App',
+  commonName = 'Interleigos Telemetry',
   ips = [],
   years = 10,
 } = {}) {

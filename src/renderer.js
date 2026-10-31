@@ -420,7 +420,7 @@ function App() {
   return h('div', { className: 'app' }, [
     h('header', { key: 'header', className: 'app-header' }, [
       h('div', { key: 'title-block' }, [
-        h('h1', { key: 'title' }, 'ACC Telemetry App'),
+        h('h1', { key: 'title' }, 'Interleigos Telemetry'),
         h(
           'p',
           { key: 'subtitle' },

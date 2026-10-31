@@ -42,7 +42,7 @@ export async function recordDiagnostics({ app, activeGame, accClient, ams2Client
           static: toBase64(accClient.lastRaw?.static),
         };
 
-  const dir = path.join(app.getPath('documents'), 'ACC Telemetry App', 'diagnostico');
+  const dir = path.join(app.getPath('documents'), 'Interleigos Telemetry', 'diagnostico');
   fs.mkdirSync(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const file = path.join(dir, `diagnostico-${activeGame}-${stamp}.json`);
