@@ -24,7 +24,7 @@ function ControllerSection({ controller, onToggle }) {
       h(
         'span',
         { key: 'name', className: 'widget-list-name' },
-        'Usar o celular como volante (vJoy)',
+        'Usar o celular como volante/controle (vJoy)',
       ),
       h('label', { key: 'toggle', className: 'switch' }, [
         h('input', {

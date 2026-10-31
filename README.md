@@ -1,6 +1,6 @@
 # Interleigos Telemetry
 
-App da comunidade [Interleigos](https://interleigos.vercel.app/telemetry) com overlays de telemetria, dash no celular e celular como volante para **Assetto Corsa Competizione**, **Automobilista 2** e **Le Mans Ultimate** — velocidade, marcha, posição, classificação, pneus, combustível, danos e um traço de pedais/RPM em tempo real, direto na tela enquanto você pilota.
+App da comunidade [Interleigos](https://interleigos.vercel.app/telemetry) com overlays de telemetria, dash no celular e celular como volante ou controle para **Assetto Corsa Competizione**, **Automobilista 2** e **Le Mans Ultimate** — velocidade, marcha, posição, classificação, pneus, combustível, danos e um traço de pedais/RPM em tempo real, direto na tela enquanto você pilota.
 
 > ⚠️ **Beta**. Funciona, mas ainda em desenvolvimento ativo.
 
@@ -34,11 +34,13 @@ Use o celular na horizontal e toque em ⛶ para tela cheia.
 
 ### Celular como volante
 
-Na aba **Volante** da página do celular, você pilota inclinando o celular como um volante. O freio e o acelerador são os sliders das laterais. Para trocar de marcha, incline o topo do celular para frente (sobe) ou para trás (reduz), ou use os botões SUBIR/REDUZIR. Ao lado da marcha ficam os atalhos: TC+/−, ABS+/−, pit limiter, ignição, partida e piscar farol.
+Na aba **Volante** da página do celular, você pilota inclinando o celular como um volante. O freio e o acelerador são os sliders das laterais. Para trocar de marcha, incline o topo do celular para frente (sobe) ou para trás (reduz), ou use os botões SUBIR/REDUZIR. Ao lado da marcha ficam os atalhos: TC+/−, ABS+/−, pit limiter, ignição, partida, piscar farol e pedir pit.
+
+Prefere jogar com os polegares? A aba **Controle** vira um gamepad na tela: analógico da direção à esquerda, freio e acelerador à direita, LB/RB para reduzir e subir marcha e os mesmos atalhos no meio. Não usa os sensores de movimento, e o vJoy e o mapeamento no jogo são os mesmos do volante.
 
 1. Instale o [vJoy](https://github.com/BrunnerInnovation/vJoy/releases) e reinicie o PC. No "Configure vJoy", o dispositivo 1 precisa dos eixos X, Y e Z e de 11 botões (2 de marcha + 9 de atalhos, incluindo pedir pit).
-2. No app, ligue **Usar o celular como volante (vJoy)**.
-3. No celular, abra a aba **Volante** e toque em **Começar a pilotar**.
+2. No app, ligue **Usar o celular como volante/controle (vJoy)**.
+3. No celular, abra a aba **Volante** (ou **Controle**) e toque em **Começar a pilotar**.
 4. No ACC, vá em Opções → Controles e mapeie volante, acelerador, freio, marchas e atalhos usando os botões de **Ajustes → Mapear no ACC / Mapear atalhos**. Cada botão mexe só aquele comando.
 
 Por segurança, se o celular parar de mandar comandos (Wi-Fi caiu, tela apagou, app fechado), o PC solta o acelerador e o freio na hora.
