@@ -26,7 +26,7 @@ const INT_MAX = 2147483647;
 const STALE_AFTER_MS = 2000;
 
 // Phone vibration: how often each effect may fire while it lasts.
-const KERB_EVERY_MS = 100;
+const KERB_EVERY_MS = 120;
 const OFFTRACK_EVERY_MS = 220;
 
 const validLapMs = (ms) => (ms > 0 && ms < INT_MAX ? ms : null);
@@ -197,9 +197,11 @@ export class RemoteServer extends EventEmitter {
     const h = this.haptics;
     const now = Date.now();
     const kerb = p.kerb ?? 0;
-    if (kerb > 0.08 && now - h.lastKerbAt >= KERB_EVERY_MS) {
+    // ACC's kerb signal is weak (often < 0.1), so the bar is low. Phone
+    // vibration motors barely register pulses under ~30 ms, hence the floor.
+    if (kerb > 0.02 && now - h.lastKerbAt >= KERB_EVERY_MS) {
       h.lastKerbAt = now;
-      this._sendHaptic('kerb', Math.round(10 + kerb * 25));
+      this._sendHaptic('kerb', Math.round(40 + Math.min(1, kerb * 2) * 30));
     }
     if (p.offTrack && now - h.lastOffTrackAt >= OFFTRACK_EVERY_MS) {
       h.lastOffTrackAt = now;

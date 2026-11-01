@@ -31,6 +31,7 @@
         <div id="shift-lights" class="shift-lights"></div>
         <div class="topbar-right">
           <span id="conn" class="conn conn-connecting">Conectando…</span>
+          <button class="icon-btn settings-open" title="Ajustes">⚙</button>
           <button id="fullscreen-btn" class="icon-btn" title="Tela cheia">
             ⛶
           </button>
@@ -315,13 +316,23 @@
       <div id="settings" class="settings" hidden>
         <div class="settings-panel">
           <div class="settings-header">
-            <h2>Ajustes do volante e do controle</h2>
+            <h2>Ajustes</h2>
             <button class="ghost-btn" id="settings-close">Fechar</button>
           </div>
           <div class="settings-body">
             <div class="settings-col" id="settings-sliders"></div>
             <div class="settings-col">
               <div class="settings-toggles" id="settings-toggles"></div>
+              <h3>Vibração</h3>
+              <p class="settings-hint">
+                Funciona em qualquer aba. Os números abaixo mostram os sinais
+                que chegaram do PC: se a zebra não aumenta quando você passa
+                nela, o jogo não está mandando o sinal.
+              </p>
+              <div class="haptic-test">
+                <button class="ghost-btn" id="haptic-test">Testar vibração</button>
+                <span id="haptic-counts">Zebra 0 · Fora da pista 0 · Batidas 0</span>
+              </div>
               <h3>Mapear no jogo</h3>
               <p class="settings-hint">
                 Nos controles do jogo, clique no comando e toque no botão

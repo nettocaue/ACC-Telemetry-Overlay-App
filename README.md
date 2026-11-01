@@ -92,7 +92,7 @@ No LMU, ligue uma vez **Settings → Gameplay → Enable Plugins**. O app lê a 
 
 ## Vibração e pit no celular
 
-- Com **Ajustes → Vibrar com zebra, saída de pista e batidas** ligado, o celular vibra em pulsos curtos na zebra, em pulsos duplos fora da pista e com um tranco mais longo nas batidas (ACC, AMS2 e LMU).
+- Com **Ajustes → Vibrar com zebra, saída de pista e batidas** ligado, o celular vibra em pulsos curtos na zebra, em pulsos duplos fora da pista e com um tranco mais longo nas batidas (ACC, AMS2 e LMU), em qualquer aba (Dash, Volante ou Controle). Em **Ajustes → Vibração** tem um botão para testar e um contador dos sinais que chegaram do PC.
 - O atalho **PEDIR PIT** usa o botão 11 do vJoy — configure **11 botões** no Configure vJoy e mapeie o comando de pedir pit do jogo. No AMS2 e no LMU o botão acende quando o pit está pedido.
 
 ## Como funciona

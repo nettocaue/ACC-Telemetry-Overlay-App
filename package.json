@@ -1,7 +1,7 @@
 {
   "name": "acc-telemetry-app",
   "productName": "ACC Telemetry App",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "private": true,
   "description": "Interleigos Telemetry — overlays de telemetria, dash e volante no celular para ACC, Automobilista 2 e Le Mans Ultimate",
   "keywords": [],
