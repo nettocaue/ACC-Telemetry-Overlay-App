@@ -543,6 +543,7 @@
 
   const openSettings = () => {
     buildSettingsUi();
+    if (typeof showHapticCounts === 'function') showHapticCounts();
     $('settings').hidden = false;
   };
   document
@@ -837,9 +838,20 @@
 
   // --- Track vibration (kerbs, off-track, impacts) ----------------------
 
+  // Works in every tab (the dash too), as long as the page is on screen.
   let lastImpactVibeAt = 0;
+  const hapticCounts = { kerb: 0, offtrack: 0, impact: 0 };
+  function showHapticCounts() {
+    setText(
+      $('haptic-counts'),
+      `Zebra ${hapticCounts.kerb} · Fora da pista ${hapticCounts.offtrack} · Batidas ${hapticCounts.impact}`,
+    );
+  }
   onHaptic.push((msg) => {
-    if (!driving || !settings.hapticTrack || !navigator.vibrate) return;
+    if (msg.kind in hapticCounts) hapticCounts[msg.kind]++;
+    if (!$('settings').hidden) showHapticCounts();
+    if (!settings.hapticTrack || !navigator.vibrate) return;
+    if (document.visibilityState !== 'visible') return;
     const now = performance.now();
     if (msg.kind === 'impact') {
       lastImpactVibeAt = now;
@@ -848,8 +860,15 @@
     }
     // Don't cut an impact buzz short with a kerb tick.
     if (now - lastImpactVibeAt < 400) return;
-    if (msg.kind === 'offtrack') navigator.vibrate([30, 25, 30]);
-    else navigator.vibrate(msg.ms);
+    if (msg.kind === 'offtrack') navigator.vibrate([50, 40, 50]);
+    else navigator.vibrate(Math.max(35, msg.ms));
+  });
+  $('haptic-test').addEventListener('click', () => {
+    if (!navigator.vibrate) {
+      setText($('haptic-counts'), 'Este navegador não deixa a página vibrar.');
+      return;
+    }
+    navigator.vibrate([60, 60, 60, 60, 200]);
   });
 
   // --- Shortcut buttons (held while the finger is down) -----------------
