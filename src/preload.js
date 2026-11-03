@@ -50,6 +50,8 @@ contextBridge.exposeInMainWorld('remote', {
   setController: (enabled) =>
     ipcRenderer.invoke('remote:setController', enabled),
   onStatus: (cb) => subscribe('remote:status', cb),
+  checkFirewall: () => ipcRenderer.invoke('firewall:check'),
+  allowFirewall: () => ipcRenderer.invoke('firewall:allow'),
 });
 
 contextBridge.exposeInMainWorld('game', {

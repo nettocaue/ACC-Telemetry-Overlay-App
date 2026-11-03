@@ -18,6 +18,7 @@ import { LmuSharedMemoryClient } from './telemetry/lmuSharedMemory.js';
 import { recordDiagnostics } from './telemetry/diagnostics.js';
 import { loadSettings, saveSettings } from './config/settingsStore.js';
 import { ensureBroadcastingConfig } from './config/accConfig.js';
+import { checkFirewall, allowFirewall } from './config/firewall.js';
 import { WIDGET_DEFS } from './widgets/registry.js';
 import { RemoteServer, generateToken } from './remote/remoteServer.js';
 import { qrToSvg } from './remote/qrCode.js';
@@ -336,6 +337,12 @@ function runApp() {
   };
 
   ipcMain.handle('remote:getStatus', () => remoteStatus());
+  const remotePort = () => settings.remote.port ?? DEFAULT_REMOTE_PORT;
+  ipcMain.handle('firewall:check', () => checkFirewall(remotePort()));
+  ipcMain.handle('firewall:allow', async () => {
+    const result = await allowFirewall(remotePort());
+    return { ...result, ...(await checkFirewall(remotePort())) };
+  });
   ipcMain.handle('remote:setEnabled', (_e, enabled) => {
     updateBothSettings((s) => {
       s.remote = { ...s.remote, enabled };

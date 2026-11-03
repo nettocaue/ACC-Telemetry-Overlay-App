@@ -391,3 +391,29 @@ button:not(:disabled):hover {
   font-size: 0.75rem;
   opacity: 0.5;
 }
+
+.firewall-row p {
+  margin: 0.4rem 0;
+}
+
+.firewall-ok {
+  color: #3ddc6a;
+}
+
+.firewall-todo {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.firewall-todo p {
+  flex: 1;
+}
+
+.firewall-todo button {
+  white-space: nowrap;
+}
+
+.warning {
+  color: #f0c000;
+}
