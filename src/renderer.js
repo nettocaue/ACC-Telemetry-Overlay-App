@@ -74,6 +74,53 @@ function ControllerSection({ controller, onToggle }) {
 
 // Phone dash: toggles the local HTTPS server and shows the QR code / URL
 // the phone opens. All the networking lives in the main process.
+// Windows Firewall: one click creates a rule by port (survives updates).
+function FirewallRow() {
+  const [fw, setFw] = useState(null); // { supported, allowed, publicNetwork }
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    window.remote.checkFirewall().then(setFw).catch(() => setFw(null));
+  }, []);
+
+  if (!fw || !fw.supported) return null;
+
+  const allow = async () => {
+    setBusy(true);
+    setNote('');
+    const result = await window.remote.allowFirewall();
+    setBusy(false);
+    setFw(result);
+    if (result.cancelled) setNote('A permissão de administrador foi cancelada.');
+    else if (!result.allowed) setNote('Não foi possível criar a regra. Tente de novo ou libere manualmente.');
+  };
+
+  return h('div', { className: 'firewall-row' }, [
+    fw.allowed
+      ? h('p', { key: 'ok', className: 'firewall-ok' }, '✓ Firewall do Windows liberado para o celular.')
+      : h('div', { key: 'todo', className: 'firewall-todo' }, [
+          h(
+            'p',
+            { key: 't' },
+            'O celular não abre a página ("demorou muito para responder")? Libere o app no Firewall do Windows. Vale para as próximas atualizações também.',
+          ),
+          h(
+            'button',
+            { key: 'b', onClick: allow, disabled: busy },
+            busy ? 'Aguardando permissão…' : 'Liberar no Firewall',
+          ),
+        ]),
+    fw.publicNetwork &&
+      h(
+        'p',
+        { key: 'pub', className: 'warning' },
+        'Sua rede está marcada como Pública no Windows. Mude para Privada em Configurações → Rede e Internet → propriedades da rede, senão o celular não consegue conectar.',
+      ),
+    note && h('p', { key: 'note', className: 'error' }, note),
+  ]);
+}
+
 function PhonePanel() {
   const [status, setStatus] = useState(null);
   const [selectedIp, setSelectedIp] = useState(null);
@@ -171,11 +218,7 @@ function PhonePanel() {
             { key: 'step2' },
             '2. Na primeira vez o Chrome avisa que a conexão "não é particular": toque em Avançado → Continuar. É o certificado do próprio app.',
           ),
-          h(
-            'p',
-            { key: 'step3' },
-            '3. Se o Windows perguntar sobre o Firewall, permita em redes privadas.',
-          ),
+          h(FirewallRow, { key: 'firewall' }),
           h('div', { key: 'url', className: 'phone-url-row' }, [
             h('code', { key: 'code', className: 'phone-url' }, address.url),
             h(

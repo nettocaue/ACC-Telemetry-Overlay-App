@@ -30,6 +30,8 @@ Mostra marcha, velocidade, shift lights, delta da volta, últimas voltas, pneus,
 3. Na primeira vez o Chrome avisa que a conexão "não é particular": toque em **Avançado → Continuar**. É o certificado autoassinado do próprio app (necessário para recursos como tela cheia, manter a tela ligada e, no futuro, os sensores de movimento).
 4. Se o Windows perguntar sobre o Firewall, permita em **redes privadas**.
 
+O celular não abre a página ("demorou muito para responder")? Clique em **Liberar no Firewall** no painel **Dash no celular**: o app pede permissão de administrador uma vez e cria uma regra no Firewall do Windows pela porta (8770), que continua valendo depois das atualizações. A rede do Windows precisa estar como **Privada**.
+
 Use o celular na horizontal e toque em ⛶ para tela cheia.
 
 A dash vem no estilo **display** (como a tela de um volante de corrida): volta atual com delta, última e melhor volta, TC, ABS, velocidade, marcha com barras de freio e acelerador, bias de freio, RPM, mapa do motor, combustível e voltas restantes, pneus (temperatura e pressão), relógio e tempo de sessão, volta, posição, temperaturas do ar e da pista e farol. Prefere a dash antiga? Desligue **Ajustes → Dash no estilo display**.
