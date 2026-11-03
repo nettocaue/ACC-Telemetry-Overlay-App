@@ -202,6 +202,92 @@
     setText($(`val-${name}`), `${pct}%`);
   }
 
+  // --- "Display" dash (car-display style) --------------------------------
+
+  const dspTyres = [...document.querySelectorAll('.dsp-tyre')].map((el) => ({
+    el,
+    temp: el.querySelector('b'),
+    psi: el.querySelector('i'),
+  }));
+  const pad2 = (n) => String(n).padStart(2, '0');
+  function formatSession(ms) {
+    if (ms == null || !(ms > 0)) return '';
+    const total = Math.floor(ms / 1000);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const sec = total % 60;
+    return h > 0 ? `faltam ${h}:${pad2(m)}:${pad2(sec)}` : `faltam ${m}:${pad2(sec)}`;
+  }
+
+  function renderDisplay(t) {
+    const ratio = t.maxRpm ? Math.min(1, t.rpm / t.maxRpm) : 0;
+    const fill = $('dsp-rpm-fill');
+    const w = `${(ratio * 100).toFixed(1)}%`;
+    if (fill.style.width !== w) fill.style.width = w;
+    setClass(fill, 'shift', ratio >= SHIFT_FULL);
+
+    setText($('dsp-current'), formatLap(t.currentLap));
+    setClass($('dsp-current'), 'invalid', t.validLap === false);
+    const deltaEl = $('dsp-delta');
+    if (t.delta == null) {
+      setText(deltaEl, '--.---');
+    } else {
+      const sign = t.delta > 0 ? '+' : t.delta < 0 ? '−' : '±';
+      setText(deltaEl, `${sign}${(Math.abs(t.delta) / 1000).toFixed(3)}`);
+    }
+    setClass(deltaEl, 'faster', t.delta != null && t.delta < 0);
+    setClass(deltaEl, 'slower', t.delta != null && t.delta > 0);
+    setText($('dsp-last'), formatLap(t.lastLap));
+    setText($('dsp-best'), formatLap(t.bestLap));
+
+    setText($('dsp-tc'), t.tc == null ? '-' : String(t.tc));
+    setText($('dsp-abs'), t.abs == null ? '-' : String(t.abs));
+    setClass($('dsp-tc-box'), 'active', t.tcActive);
+    setClass($('dsp-abs-box'), 'active', t.absActive);
+
+    setText($('dsp-speed'), String(t.speed));
+    setText($('dsp-gear'), t.gear < 0 ? 'R' : t.gear === 0 ? 'N' : String(t.gear));
+    setClass($('dsp-gear-box'), 'limiter', t.pitLimiter);
+    for (const [id, v] of [['dsp-brake', t.brake], ['dsp-gas', t.gas]]) {
+      const h = `${Math.round(clamp01(v) * 100)}%`;
+      const bar = $(id);
+      if (bar.style.height !== h) bar.style.height = h;
+    }
+    setText($('dsp-bias'), t.brakeBias == null ? '--' : t.brakeBias.toFixed(1));
+
+    setText($('dsp-rpm'), String(Math.round(t.rpm)));
+    setText($('dsp-map'), t.engineMap == null ? '-' : String(t.engineMap));
+    setText($('dsp-fuel'), t.fuel > 0 ? t.fuel.toFixed(1) : '--');
+    setText(
+      $('dsp-fuel-laps'),
+      t.fuelLaps > 0 ? `${t.fuelLaps.toFixed(1)} voltas` : t.fuelPerLap > 0 ? `${t.fuelPerLap.toFixed(2)} L/v` : '-- voltas',
+    );
+    setClass($('dsp-fuel-box'), 'low', t.fuelLaps > 0 && t.fuelLaps < 2);
+
+    dspTyres.forEach((tyre, i) => {
+      const temp = t.tyreTemp[i] || 0;
+      setText(tyre.temp, temp ? `${Math.round(temp)}°` : '--');
+      setText(tyre.psi, t.tyrePsi[i] ? t.tyrePsi[i].toFixed(1) : '--');
+      const color = tyreColor(temp);
+      if (tyre.el.style.background !== color) tyre.el.style.background = color;
+    });
+
+    const d = new Date();
+    setText($('dsp-clock'), `${pad2(d.getHours())}:${pad2(d.getMinutes())}`);
+    setText($('dsp-session'), formatSession(t.sessionTimeLeft));
+
+    const lapNow = t.laps + 1;
+    setText($('dsp-lap'), t.totalLaps > 0 ? `${Math.min(lapNow, t.totalLaps)}/${t.totalLaps}` : String(lapNow));
+    setText(
+      $('dsp-pos'),
+      t.position > 0 ? (t.carCount > 0 ? `${t.position}/${t.carCount}` : String(t.position)) : '-',
+    );
+    setText($('dsp-air'), t.airTemp ? `${Math.round(t.airTemp)}°C` : '--');
+    setText($('dsp-track'), t.roadTemp ? `${Math.round(t.roadTemp)}°C` : '--');
+    setClass($('dsp-lights'), 'on', t.lights > 0 || t.flashing);
+    setClass($('dsp-lights'), 'high', t.lights > 1);
+  }
+
   function render(now) {
     const t = latest;
     if (!t || !t.live) {
@@ -305,6 +391,8 @@
     const fuelLapsEl = $('fuel-laps');
     setText(fuelLapsEl, t.fuelLaps > 0 ? t.fuelLaps.toFixed(1) : '--');
     setClass(fuelLapsEl, 'low', t.fuelLaps > 0 && t.fuelLaps < 2);
+
+    if (settings.dashDisplay) renderDisplay(t);
 
     // Pedals + force feedback
     renderPedal('clutch', t.clutch);
@@ -453,6 +541,7 @@
     },
   ];
   const TOGGLES = [
+    { key: 'dashDisplay', label: 'Dash no estilo display (desligado = dash clássica)', def: true },
     { key: 'shortcuts', label: 'Mostrar atalhos (TC, ABS, pit…)', def: true },
     { key: 'gestureShift', label: 'Trocar marcha inclinando (só volante)', def: true },
     { key: 'invertShift', label: 'Inverter direção do tranco', def: false },
@@ -898,6 +987,8 @@
 
   function applyShortcutVisibility() {
     dashEl.classList.toggle('no-shortcuts', !settings.shortcuts);
+    dashEl.classList.toggle('style-display', Boolean(settings.dashDisplay));
+    dirty = true;
   }
 
   // --- Binding helper ------------------------------------------------------------------

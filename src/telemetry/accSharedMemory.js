@@ -10,6 +10,7 @@
 // implementation of the same publicly documented memory layout.
 import { EventEmitter } from 'node:events';
 import { SharedSection } from './sharedSection.js';
+import { accBrakeBias } from './accBrakeBias.js';
 
 const NUL_CHAR = String.fromCharCode(0);
 
@@ -110,7 +111,7 @@ function parsePhysics(buf) {
   r.arr2F(4, 3); // tyreContactPoint
   r.arr2F(4, 3); // tyreContactNormal
   r.arr2F(4, 3); // tyreContactHeading
-  r.f32(); // brakeBias
+  const brakeBiasRaw = r.f32();
   r.arrF(3); // localVelocity
   r.i32(); // P2PActivation
   r.i32(); // P2PStatus
@@ -151,6 +152,7 @@ function parsePhysics(buf) {
     speedKmh,
     wheelPressure,
     tyreWear,
+    brakeBiasRaw,
     tyreCoreTempEarly,
     tyreCoreTemp,
     carDamage: {
@@ -228,7 +230,7 @@ function parseGraphics(buf) {
   const tyreCompound = r.wstring(33, 2); // +2 padding to 4-byte boundary
   r.f32(); // replayTimeMultiplier
   r.f32(); // normalizedCarPosition
-  r.i32(); // activeCars
+  const activeCars = r.i32();
   r.arr2F(60, 3); // carCoordinates[60][3] = 720 bytes
   for (let i = 0; i < 60; i++) r.i32(); // carID[60] = 240 bytes
   r.i32(); // playerCarID
@@ -248,10 +250,10 @@ function parseGraphics(buf) {
   const tcCut = r.i32();
   const engineMap = r.i32();
   const abs = r.i32();
-  r.f32(); // fuelXLap
+  const fuelXLap = r.f32();
   r.i32(); // rainLights
   const flashingLights = r.bool();
-  r.i32(); // lightsStage
+  const lightsStage = r.i32(); // 0 off, 1 low, 2 high
   r.f32(); // exhaustTemperature
   r.i32(); // wiperLV
   r.i32(); // driverStintTotalTimeLeft
@@ -304,7 +306,11 @@ function parseGraphics(buf) {
     tc,
     tcCut,
     engineMap,
+    engineMapShown: engineMap + 1, // 0-based in shared memory
     abs,
+    activeCars,
+    fuelXLap,
+    lightsStage,
     flashingLights,
     iDeltaLapTime,
     iEstimatedLapTime,
@@ -364,6 +370,7 @@ export class AccSharedMemoryClient extends EventEmitter {
       const physicsRaw = this.physics.read();
       const physics = parsePhysics(physicsRaw);
       this._trackImpacts(physics);
+      physics.brakeBias = accBrakeBias(physics.brakeBiasRaw, this.lastCarModel);
       if (physics.packetId !== this.lastPacketId) {
         this.lastPacketId = physics.packetId;
         this.emit('physics', physics);
@@ -372,6 +379,7 @@ export class AccSharedMemoryClient extends EventEmitter {
       // re-sending the same snapshot to every consumer on every tick.
       const staticRaw = this.staticSection.read();
       const staticData = parseStatic(staticRaw);
+      this.lastCarModel = staticData.carModel;
       const staticSnapshot = JSON.stringify(staticData);
       if (staticSnapshot !== this.lastStaticSnapshot) {
         this.lastStaticSnapshot = staticSnapshot;

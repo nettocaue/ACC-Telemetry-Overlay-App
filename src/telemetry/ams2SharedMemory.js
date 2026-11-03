@@ -59,6 +59,7 @@ const O = {
   pitMode: 6808,
   pitSchedule: 6812,
   carFlags: 6816,
+  brakeBias: 19380,
   waterTemp: 6828,
   fuelLevel: 6840,
   fuelCapacity: 6844,
@@ -191,6 +192,7 @@ export function parseAms2(buf) {
     pitMode: u32(buf, O.pitMode),
     pitSchedule: u32(buf, O.pitSchedule),
     carFlags: u32(buf, O.carFlags),
+    brakeBias: f32(buf, O.brakeBias),
     waterTemp: f32(buf, O.waterTemp),
     fuelLevel: f32(buf, O.fuelLevel),
     fuelCapacity: f32(buf, O.fuelCapacity),
@@ -316,6 +318,11 @@ export class FuelTracker {
     return this.stintStart !== null && this.last !== null
       ? Math.max(0, this.stintStart - this.last)
       : 0;
+  }
+
+  get perLapAvg() {
+    if (!this.perLap.length) return 0;
+    return this.perLap.reduce((a, b) => a + b, 0) / this.perLap.length;
   }
 
   get estimatedLaps() {
@@ -513,6 +520,8 @@ export class Ams2SharedMemoryClient extends EventEmitter {
       airTemp: d.ambientTemp,
       roadTemp: d.trackTemp,
       waterTemp: d.waterTemp,
+      // mBrakeBias is the rear share (e.g. 0.43 → 57% front); -1 = unset.
+      brakeBias: d.brakeBias > 0 && d.brakeBias < 1 ? (1 - d.brakeBias) * 100 : null,
       isEngineRunning: engineOn,
       pitLimiterOn: (flags & CAR_FLAG.SPEED_LIMITER) !== 0,
       ignitionOn: engineOn,
@@ -562,6 +571,10 @@ export class Ams2SharedMemoryClient extends EventEmitter {
       engineMap: null,
       abs: d.antiLockSetting >= 0 ? d.antiLockSetting : null,
       flashingLights: (d.carFlags & CAR_FLAG.HEADLIGHT) !== 0,
+      lightsStage: (d.carFlags & CAR_FLAG.HEADLIGHT) !== 0 ? 1 : 0,
+      fuelXLap: this.fuel.perLapAvg,
+      activeCars: d.participants.length,
+      engineMapShown: null,
       iDeltaLapTime: delta === null ? 0 : Math.round(Math.abs(delta) * 1000),
       iEstimatedLapTime:
         delta === null || bestMs === INT_MAX ? INT_MAX : Math.round(bestMs + delta * 1000),
