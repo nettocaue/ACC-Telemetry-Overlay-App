@@ -155,6 +155,104 @@
           <span id="val-ffb" class="pedal-val">0%</span>
         </div>
       </footer>
+
+      <div class="display" id="display">
+        <div class="dsp-rpm">
+          <div class="dsp-rpm-fill" id="dsp-rpm-fill"></div>
+        </div>
+        <div class="dsp-body">
+          <div class="dsp-side">
+            <span class="dsp-lights" id="dsp-lights" title="Farol">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5C5 5 3 8.5 3 12s2 7 7 7h1V5h-1z" fill="currentColor"/><path d="M14 7h7M14 10h7M14 14h7M14 17h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <span class="dsp-vtemp dsp-air">AR <b id="dsp-air">--</b></span>
+            <span class="dsp-vtemp dsp-track">PISTA <b id="dsp-track">--</b></span>
+          </div>
+
+          <div class="dsp-col">
+            <div class="dsp-box">
+              <span class="dsp-label">VOLTA ATUAL</span>
+              <span class="dsp-val dsp-time" id="dsp-current">--:--.---</span>
+              <span class="dsp-delta" id="dsp-delta">--.---</span>
+            </div>
+            <div class="dsp-box">
+              <span class="dsp-label">ÚLTIMA</span>
+              <span class="dsp-val dsp-time" id="dsp-last">--:--.---</span>
+            </div>
+            <div class="dsp-box dsp-green">
+              <span class="dsp-label">MELHOR</span>
+              <span class="dsp-val dsp-time" id="dsp-best">--:--.---</span>
+            </div>
+            <div class="dsp-row">
+              <div class="dsp-box dsp-small" id="dsp-tc-box">
+                <span class="dsp-label">TC</span>
+                <span class="dsp-val" id="dsp-tc">-</span>
+              </div>
+              <div class="dsp-box dsp-small" id="dsp-abs-box">
+                <span class="dsp-label">ABS</span>
+                <span class="dsp-val" id="dsp-abs">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dsp-col dsp-mid">
+            <div class="dsp-box dsp-yellow dsp-speed-box">
+              <span class="dsp-label">KM/H</span>
+              <span class="dsp-val" id="dsp-speed">0</span>
+            </div>
+            <div class="dsp-box dsp-gear-box" id="dsp-gear-box">
+              <span class="dsp-label">MARCHA</span>
+              <span class="dsp-gear" id="dsp-gear">N</span>
+              <span class="dsp-pedal dsp-pedal-brake"><i id="dsp-brake"></i></span>
+              <span class="dsp-pedal dsp-pedal-gas"><i id="dsp-gas"></i></span>
+            </div>
+            <div class="dsp-box dsp-orange dsp-bias-box">
+              <span class="dsp-label">BIAS</span>
+              <span class="dsp-val" id="dsp-bias">--</span>
+            </div>
+          </div>
+
+          <div class="dsp-col">
+            <div class="dsp-box dsp-orange">
+              <span class="dsp-label">RPM</span>
+              <span class="dsp-val" id="dsp-rpm">0</span>
+            </div>
+            <div class="dsp-row">
+              <div class="dsp-box dsp-small">
+                <span class="dsp-label">MAPA</span>
+                <span class="dsp-val" id="dsp-map">-</span>
+              </div>
+              <div class="dsp-box dsp-small dsp-fuel-box" id="dsp-fuel-box">
+                <span class="dsp-label dsp-label-red">COMB.</span>
+                <span class="dsp-val" id="dsp-fuel">--</span>
+                <span class="dsp-sub" id="dsp-fuel-laps">-- voltas</span>
+              </div>
+            </div>
+            <div class="dsp-tyres-row">
+              <div class="dsp-tyres">
+                <div class="dsp-tyre" data-t="0"><b>--</b><i>--</i></div>
+                <div class="dsp-tyre" data-t="1"><b>--</b><i>--</i></div>
+                <div class="dsp-tyre" data-t="2"><b>--</b><i>--</i></div>
+                <div class="dsp-tyre" data-t="3"><b>--</b><i>--</i></div>
+              </div>
+              <div class="dsp-clock">
+                <span id="dsp-clock">--:--</span>
+                <span class="dsp-sub" id="dsp-session">--</span>
+              </div>
+            </div>
+            <div class="dsp-row">
+              <div class="dsp-box dsp-small">
+                <span class="dsp-label">VOLTA</span>
+                <span class="dsp-val" id="dsp-lap">-</span>
+              </div>
+              <div class="dsp-box dsp-small">
+                <span class="dsp-label">POSIÇÃO</span>
+                <span class="dsp-val" id="dsp-pos">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       </div>
 
       <div id="view-wheel" class="view view-wheel" hidden>

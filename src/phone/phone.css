@@ -1302,3 +1302,344 @@ body {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* --- Display dash (car-display style) -------------------------------------- */
+
+.display {
+  display: none;
+  min-height: 0;
+  grid-template-rows: 3.6vh 1fr;
+  gap: 1.4vh;
+  font-family: ui-monospace, 'Roboto Mono', 'SF Mono', Menlo, monospace;
+}
+
+.dash.style-display .view-dash > .grid,
+.dash.style-display .view-dash > .pedals {
+  display: none;
+}
+
+.dash.style-display .view-dash {
+  grid-template-rows: 1fr;
+}
+
+.dash.style-display .display {
+  display: grid;
+}
+
+.dsp-rpm {
+  position: relative;
+  border-radius: 0.6vh;
+  background: repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(100% / 40 - 2px),
+      #000 calc(100% / 40 - 2px) calc(100% / 40)
+    ),
+    #10203a;
+  overflow: hidden;
+}
+
+.dsp-rpm-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(100vw / 40 - 2px),
+      #000 calc(100vw / 40 - 2px) calc(100vw / 40)
+    ),
+    linear-gradient(90deg, #2a6cff, #3d8bff 60%, #e8e8e8 85%, #e82020);
+  background-size: 100vw 100%;
+}
+
+.dsp-rpm-fill.shift {
+  animation: dsp-blink 0.18s steps(2) infinite;
+}
+
+@keyframes dsp-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.dsp-body {
+  display: grid;
+  grid-template-columns: 4.5vw 1fr 0.85fr 1fr;
+  gap: 1.2vw;
+  min-height: 0;
+}
+
+.dsp-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2vh;
+  min-height: 0;
+}
+
+.dsp-lights {
+  width: 5vh;
+  height: 5vh;
+  color: #3a404a;
+}
+
+.dsp-lights svg {
+  width: 100%;
+  height: 100%;
+}
+
+.dsp-lights.on {
+  color: #1adc2a;
+}
+
+.dsp-lights.high {
+  color: #3d8bff;
+}
+
+.dsp-vtemp {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 2.3vh;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #f0a000;
+  white-space: nowrap;
+}
+
+.dsp-vtemp b {
+  color: #ffb84d;
+}
+
+.dsp-col {
+  display: grid;
+  grid-template-rows: 1fr 1fr 1fr 0.95fr;
+  gap: 1.2vh;
+  min-height: 0;
+}
+
+.dsp-mid {
+  grid-template-rows: 0.75fr 2.4fr 0.75fr;
+}
+
+.dsp-col:last-child {
+  grid-template-rows: 0.8fr 1fr 1.25fr 0.95fr;
+}
+
+.dsp-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1vw;
+  min-height: 0;
+}
+
+.dsp-box {
+  position: relative;
+  border: 0.35vh solid #e6e6e6;
+  border-radius: 1.2vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  min-width: 0;
+  padding: 0.6vh 0.6vw 0.4vh;
+  background: #050505;
+}
+
+.dsp-label {
+  font-size: 2vh;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #cfcfcf;
+  line-height: 1;
+}
+
+.dsp-label-red {
+  color: #ff4d4d;
+}
+
+.dsp-val {
+  font-size: 6vh;
+  font-weight: 700;
+  line-height: 1.05;
+  color: #f2f2f2;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dsp-time {
+  font-size: 6.2vh;
+}
+
+.dsp-time.invalid {
+  color: #ff4d4d;
+}
+
+.dsp-small .dsp-val {
+  font-size: 5.4vh;
+}
+
+.dsp-sub {
+  font-size: 1.9vh;
+  color: #9a9a9a;
+  white-space: nowrap;
+}
+
+.dsp-delta {
+  font-size: 2.6vh;
+  font-weight: 700;
+  color: #9a9a9a;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsp-delta.faster {
+  color: #1adc2a;
+}
+
+.dsp-delta.slower {
+  color: #ff4d4d;
+}
+
+.dsp-green {
+  border-color: #1adc2a;
+}
+
+.dsp-green .dsp-label,
+.dsp-green .dsp-val {
+  color: #1adc2a;
+}
+
+.dsp-yellow {
+  border-color: #f0c000;
+}
+
+.dsp-yellow .dsp-val {
+  color: #f0c000;
+}
+
+.dsp-orange {
+  border-color: #ff7a1a;
+}
+
+.dsp-orange .dsp-label,
+.dsp-orange .dsp-val {
+  color: #ff9a4d;
+}
+
+.dsp-box.active {
+  border-color: #f0c000;
+  background: #2a2200;
+}
+
+.dsp-gear-box {
+  border-width: 0.5vh;
+}
+
+.dsp-gear {
+  font-size: 34vh;
+  font-weight: 800;
+  line-height: 0.95;
+  color: #d9fff6;
+  text-shadow: 0 0 2vh rgba(170, 255, 235, 0.35);
+  font-family: system-ui, sans-serif;
+}
+
+.dsp-gear-box.limiter .dsp-gear {
+  color: #3d8bff;
+}
+
+.dsp-gear.flash {
+  color: var(--accent);
+}
+
+.dsp-fuel-box.low {
+  border-color: #ff4d4d;
+  background: #2a0505;
+}
+
+.dsp-tyres-row {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 1vw;
+  min-height: 0;
+}
+
+.dsp-tyres {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.8vh 0.6vw;
+  min-height: 0;
+}
+
+.dsp-tyre {
+  border-radius: 0.9vh;
+  background: #3a404a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #050505;
+  min-height: 0;
+}
+
+.dsp-tyre b {
+  font-size: 2.8vh;
+  line-height: 1;
+}
+
+.dsp-tyre i {
+  font-style: normal;
+  font-size: 1.8vh;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.dsp-clock {
+  border: 0.35vh solid #e6e6e6;
+  border-radius: 1.2vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.dsp-clock span:first-child {
+  font-size: 5vh;
+  font-weight: 700;
+  color: #f2f2f2;
+}
+
+.dsp-pedal {
+  position: absolute;
+  top: 1.4vh;
+  bottom: 1.4vh;
+  width: 1.4vh;
+  border-radius: 0.7vh;
+  background: #1a1d22;
+  overflow: hidden;
+}
+
+.dsp-pedal-brake {
+  left: 1.2vh;
+}
+
+.dsp-pedal-gas {
+  right: 1.2vh;
+}
+
+.dsp-pedal i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+}
+
+.dsp-pedal-brake i {
+  background: #ff3b3b;
+}
+
+.dsp-pedal-gas i {
+  background: #1adc2a;
+}

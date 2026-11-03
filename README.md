@@ -32,6 +32,10 @@ Mostra marcha, velocidade, shift lights, delta da volta, últimas voltas, pneus,
 
 Use o celular na horizontal e toque em ⛶ para tela cheia.
 
+A dash vem no estilo **display** (como a tela de um volante de corrida): volta atual com delta, última e melhor volta, TC, ABS, velocidade, marcha com barras de freio e acelerador, bias de freio, RPM, mapa do motor, combustível e voltas restantes, pneus (temperatura e pressão), relógio e tempo de sessão, volta, posição, temperaturas do ar e da pista e farol. Prefere a dash antiga? Desligue **Ajustes → Dash no estilo display**.
+
+O bias de freio da ACC segue a tabela de ajuste por carro da Kunos; carros fora da tabela mostram `--`.
+
 ### Celular como volante
 
 Na aba **Volante** da página do celular, você pilota inclinando o celular como um volante. O freio e o acelerador são os sliders das laterais. Para trocar de marcha, incline o topo do celular para frente (sobe) ou para trás (reduz), ou use os botões SUBIR/REDUZIR. Ao lado da marcha ficam os atalhos: TC+/−, ABS+/−, pit limiter, ignição, partida, piscar farol e pedir pit.
