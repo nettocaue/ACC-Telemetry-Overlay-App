@@ -219,12 +219,36 @@
     return h > 0 ? `faltam ${h}:${pad2(m)}:${pad2(sec)}` : `faltam ${m}:${pad2(sec)}`;
   }
 
-  function renderDisplay(t) {
-    const ratio = t.maxRpm ? Math.min(1, t.rpm / t.maxRpm) : 0;
-    const fill = $('dsp-rpm-fill');
-    const w = `${(ratio * 100).toFixed(1)}%`;
-    if (fill.style.width !== w) fill.style.width = w;
-    setClass(fill, 'shift', ratio >= SHIFT_FULL);
+  // Segmented RPM bar: same colours and thresholds as the shift lights.
+  const DSP_SEGMENTS = 24;
+  const dspSegs = [];
+  for (let i = 0; i < DSP_SEGMENTS; i++) {
+    const seg = document.createElement('span');
+    seg.className = 'dsp-seg';
+    $('dsp-rpm-bar').appendChild(seg);
+    dspSegs.push(seg);
+  }
+  const segColor = (i) =>
+    i < DSP_SEGMENTS / 3 ? 'on-green' : i < (DSP_SEGMENTS * 2) / 3 ? 'on-yellow' : 'on-red';
+
+  function renderDisplay(t, now) {
+    const ratio = t.maxRpm ? t.rpm / t.maxRpm : 0;
+    const blink = ratio >= SHIFT_BLINK && Math.floor(now / 90) % 2 === 0;
+    const lit =
+      ratio <= SHIFT_START
+        ? 0
+        : Math.ceil(((ratio - SHIFT_START) / (SHIFT_FULL - SHIFT_START)) * DSP_SEGMENTS);
+    dspSegs.forEach((seg, i) => {
+      const cls =
+        ratio >= SHIFT_BLINK
+          ? blink
+            ? 'dsp-seg on-blue'
+            : 'dsp-seg'
+          : i < lit
+            ? `dsp-seg ${segColor(i)}`
+            : 'dsp-seg';
+      if (seg.className !== cls) seg.className = cls;
+    });
 
     setText($('dsp-current'), formatLap(t.currentLap));
     setClass($('dsp-current'), 'invalid', t.validLap === false);
@@ -269,7 +293,9 @@
       setText(tyre.temp, temp ? `${Math.round(temp)}°` : '--');
       setText(tyre.psi, t.tyrePsi[i] ? t.tyrePsi[i].toFixed(1) : '--');
       const color = tyreColor(temp);
-      if (tyre.el.style.background !== color) tyre.el.style.background = color;
+      if (tyre.el.style.getPropertyValue('--tyre') !== color) {
+        tyre.el.style.setProperty('--tyre', color);
+      }
     });
 
     const d = new Date();
@@ -392,7 +418,7 @@
     setText(fuelLapsEl, t.fuelLaps > 0 ? t.fuelLaps.toFixed(1) : '--');
     setClass(fuelLapsEl, 'low', t.fuelLaps > 0 && t.fuelLaps < 2);
 
-    if (settings.dashDisplay) renderDisplay(t);
+    if (settings.dashDisplay) renderDisplay(t, now);
 
     // Pedals + force feedback
     renderPedal('clutch', t.clutch);

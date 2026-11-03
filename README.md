@@ -34,7 +34,7 @@ Use o celular na horizontal e toque em ⛶ para tela cheia.
 
 A dash vem no estilo **display** (como a tela de um volante de corrida): volta atual com delta, última e melhor volta, TC, ABS, velocidade, marcha com barras de freio e acelerador, bias de freio, RPM, mapa do motor, combustível e voltas restantes, pneus (temperatura e pressão), relógio e tempo de sessão, volta, posição, temperaturas do ar e da pista e farol. Prefere a dash antiga? Desligue **Ajustes → Dash no estilo display**.
 
-O bias de freio da ACC segue a tabela de ajuste por carro da Kunos; carros fora da tabela mostram `--`.
+O bias de freio da ACC segue a tabela de ajuste por carro da Kunos; carros fora da tabela mostram `--`. A fonte da dash é a [Orbitron](https://github.com/theleagueof/orbitron) (SIL Open Font License, em `src/phone/fonts/OFL-Orbitron.txt`).
 
 ### Celular como volante
 
