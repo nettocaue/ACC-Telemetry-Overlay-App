@@ -1308,9 +1308,11 @@ body {
 .display {
   display: none;
   min-height: 0;
-  grid-template-rows: 3.6vh 1fr;
+  grid-template-rows: 4.2vh 1fr;
   gap: 1.4vh;
-  font-family: ui-monospace, 'Roboto Mono', 'SF Mono', Menlo, monospace;
+  font-family: 'Orbitron', ui-monospace, monospace;
+  --line: #e9e9e9;
+  --stroke: 0.22vh;
 }
 
 .dash.style-display .view-dash > .grid,
@@ -1326,45 +1328,47 @@ body {
   display: grid;
 }
 
+/* One RPM bar is enough: the round shift lights hide on the display dash. */
+.dash.style-display:not(.is-wheel) .shift-lights {
+  visibility: hidden;
+}
+
 .dsp-rpm {
-  position: relative;
-  border-radius: 0.6vh;
-  background: repeating-linear-gradient(
-      90deg,
-      transparent 0 calc(100% / 40 - 2px),
-      #000 calc(100% / 40 - 2px) calc(100% / 40)
-    ),
-    #10203a;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 0.35vw;
 }
 
-.dsp-rpm-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 0;
-  background: repeating-linear-gradient(
-      90deg,
-      transparent 0 calc(100vw / 40 - 2px),
-      #000 calc(100vw / 40 - 2px) calc(100vw / 40)
-    ),
-    linear-gradient(90deg, #2a6cff, #3d8bff 60%, #e8e8e8 85%, #e82020);
-  background-size: 100vw 100%;
+.dsp-seg {
+  background: #161a20;
+  transform: skewX(-18deg);
+  transition: background 40ms linear;
 }
 
-.dsp-rpm-fill.shift {
-  animation: dsp-blink 0.18s steps(2) infinite;
+.dsp-seg.on-green {
+  background: #1adc2a;
+  box-shadow: 0 0 1.2vh rgba(26, 220, 42, 0.6);
 }
 
-@keyframes dsp-blink {
-  50% {
-    opacity: 0.25;
-  }
+.dsp-seg.on-yellow {
+  background: #f0c000;
+  box-shadow: 0 0 1.2vh rgba(240, 192, 0, 0.6);
+}
+
+.dsp-seg.on-red {
+  background: #e82020;
+  box-shadow: 0 0 1.2vh rgba(232, 32, 32, 0.6);
+}
+
+.dsp-seg.on-blue {
+  background: #3d8bff;
+  box-shadow: 0 0 1.4vh rgba(61, 139, 255, 0.8);
 }
 
 .dsp-body {
   display: grid;
   grid-template-columns: 4.5vw 1fr 0.85fr 1fr;
-  gap: 1.2vw;
+  gap: 1vw;
   min-height: 0;
 }
 
@@ -1398,21 +1402,21 @@ body {
 .dsp-vtemp {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-size: 2.3vh;
+  font-size: 2.2vh;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #f0a000;
+  letter-spacing: 0.1em;
+  color: #ff8a1f;
   white-space: nowrap;
 }
 
 .dsp-vtemp b {
-  color: #ffb84d;
+  color: #ffb066;
 }
 
 .dsp-col {
   display: grid;
   grid-template-rows: 1fr 1fr 1fr 0.95fr;
-  gap: 1.2vh;
+  gap: 1.1vh;
   min-height: 0;
 }
 
@@ -1427,14 +1431,16 @@ body {
 .dsp-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1vw;
+  gap: 0.8vw;
   min-height: 0;
 }
 
-.dsp-box {
+/* Square boxes with a clipped corner: race-display look. */
+.dsp-box,
+.dsp-clock {
   position: relative;
-  border: 0.35vh solid #e6e6e6;
-  border-radius: 1.2vh;
+  border: 0.4vh solid var(--line);
+  border-radius: 0.3vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1442,52 +1448,63 @@ body {
   min-height: 0;
   min-width: 0;
   padding: 0.6vh 0.6vw 0.4vh;
-  background: #050505;
+  background: #030303;
+  color: var(--line);
 }
 
 .dsp-label {
-  font-size: 2vh;
+  font-size: 1.9vh;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #cfcfcf;
+  letter-spacing: 0.14em;
   line-height: 1;
+  color: currentColor;
+  opacity: 0.9;
 }
 
 .dsp-label-red {
-  color: #ff4d4d;
+  color: #ff3b3b;
+  opacity: 1;
 }
 
+/* Outlined digits like the reference display. */
 .dsp-val {
-  font-size: 6vh;
+  font-size: 5.6vh;
   font-weight: 700;
-  line-height: 1.05;
-  color: #f2f2f2;
+  line-height: 1.1;
+  color: transparent;
+  -webkit-text-stroke: var(--stroke) currentColor;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
+.dsp-box .dsp-val {
+  -webkit-text-stroke-color: var(--line);
+}
+
 .dsp-time {
-  font-size: 6.2vh;
+  font-size: 5.8vh;
+  letter-spacing: 0.04em;
 }
 
 .dsp-time.invalid {
-  color: #ff4d4d;
+  -webkit-text-stroke-color: #ff3b3b !important;
 }
 
 .dsp-small .dsp-val {
-  font-size: 5.4vh;
+  font-size: 5vh;
 }
 
 .dsp-sub {
-  font-size: 1.9vh;
-  color: #9a9a9a;
+  font-size: 1.7vh;
+  font-weight: 600;
+  color: #a0a0a0;
   white-space: nowrap;
 }
 
 .dsp-delta {
-  font-size: 2.6vh;
+  font-size: 2.4vh;
   font-weight: 700;
-  color: #9a9a9a;
+  color: #a0a0a0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1496,118 +1513,152 @@ body {
 }
 
 .dsp-delta.slower {
-  color: #ff4d4d;
+  color: #ff3b3b;
 }
 
 .dsp-green {
-  border-color: #1adc2a;
-}
-
-.dsp-green .dsp-label,
-.dsp-green .dsp-val {
-  color: #1adc2a;
+  --line: #1adc2a;
 }
 
 .dsp-yellow {
-  border-color: #f0c000;
-}
-
-.dsp-yellow .dsp-val {
-  color: #f0c000;
+  --line: #f0c000;
 }
 
 .dsp-orange {
-  border-color: #ff7a1a;
-}
-
-.dsp-orange .dsp-label,
-.dsp-orange .dsp-val {
-  color: #ff9a4d;
+  --line: #ff7a1a;
 }
 
 .dsp-box.active {
-  border-color: #f0c000;
-  background: #2a2200;
+  --line: #f0c000;
+  background: #1f1900;
+}
+
+.dsp-speed-box .dsp-val,
+.dsp-bias-box .dsp-val,
+.dsp-col:last-child > .dsp-orange .dsp-val {
+  color: var(--line);
+  -webkit-text-stroke: 0;
 }
 
 .dsp-gear-box {
-  border-width: 0.5vh;
+  border-width: 0.55vh;
+  --line: #f2f2f2;
 }
 
 .dsp-gear {
-  font-size: 34vh;
+  font-size: 32vh;
   font-weight: 800;
   line-height: 0.95;
-  color: #d9fff6;
-  text-shadow: 0 0 2vh rgba(170, 255, 235, 0.35);
-  font-family: system-ui, sans-serif;
+  color: #dafff6;
+  text-shadow: 0 0 2.4vh rgba(150, 255, 230, 0.45);
 }
 
 .dsp-gear-box.limiter .dsp-gear {
   color: #3d8bff;
-}
-
-.dsp-gear.flash {
-  color: var(--accent);
+  text-shadow: 0 0 2.4vh rgba(61, 139, 255, 0.6);
 }
 
 .dsp-fuel-box.low {
-  border-color: #ff4d4d;
-  background: #2a0505;
+  --line: #ff3b3b;
+  background: #200404;
 }
 
+/* Tyres drawn on a chassis (top view), front at the top. */
 .dsp-tyres-row {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 1vw;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 0.8vw;
   min-height: 0;
 }
 
-.dsp-tyres {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 0.8vh 0.6vw;
+.dsp-car {
+  position: relative;
   min-height: 0;
+}
+
+.dsp-chassis {
+  position: absolute;
+  inset: 22% 22%;
+}
+
+/* Spine + front and rear axles. */
+.dsp-chassis::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 0.5vh;
+  transform: translateX(-50%);
+  background: #8a93a3;
+}
+
+.dsp-chassis::after {
+  content: '';
+  position: absolute;
+  inset: 0 -12%;
+  border-top: 0.5vh solid #8a93a3;
+  border-bottom: 0.5vh solid #8a93a3;
 }
 
 .dsp-tyre {
-  border-radius: 0.9vh;
-  background: #3a404a;
+  position: absolute;
+  width: 34%;
+  height: 46%;
+  border-radius: 1.2vh / 1.6vh;
+  background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.16) 0 0.35vh,
+      transparent 0.35vh 1.1vh
+    ),
+    var(--tyre, #3a404a);
+  border: 0.3vh solid #111;
+  box-shadow: inset 0 0 0 0.25vh rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   color: #050505;
-  min-height: 0;
+  z-index: 1;
+}
+
+.dsp-fl {
+  left: 0;
+  top: 0;
+}
+
+.dsp-fr {
+  right: 0;
+  top: 0;
+}
+
+.dsp-rl {
+  left: 0;
+  bottom: 0;
+}
+
+.dsp-rr {
+  right: 0;
+  bottom: 0;
 }
 
 .dsp-tyre b {
-  font-size: 2.8vh;
+  font-size: 2.4vh;
   line-height: 1;
 }
 
 .dsp-tyre i {
   font-style: normal;
-  font-size: 1.8vh;
+  font-size: 1.6vh;
   font-weight: 700;
-  opacity: 0.75;
-}
-
-.dsp-clock {
-  border: 0.35vh solid #e6e6e6;
-  border-radius: 1.2vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
+  opacity: 0.8;
 }
 
 .dsp-clock span:first-child {
-  font-size: 5vh;
+  font-size: 4.6vh;
   font-weight: 700;
-  color: #f2f2f2;
+  color: transparent;
+  -webkit-text-stroke: var(--stroke) var(--line);
 }
 
 .dsp-pedal {
@@ -1615,8 +1666,7 @@ body {
   top: 1.4vh;
   bottom: 1.4vh;
   width: 1.4vh;
-  border-radius: 0.7vh;
-  background: #1a1d22;
+  background: #15181d;
   overflow: hidden;
 }
 

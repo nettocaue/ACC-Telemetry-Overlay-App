@@ -27,6 +27,7 @@ import iconPath from './assets/icon.png';
 import phoneHtml from './phone/index.html?raw';
 import phoneJs from './phone/phone.js?raw';
 import phoneCss from './phone/phone.css?raw';
+import { DISPLAY_FONT_CSS } from './phone/displayFont.js';
 
 if (started) {
   app.quit();
@@ -274,7 +275,7 @@ function runApp() {
   const DEFAULT_REMOTE_PORT = 8770;
   const remoteServer = new RemoteServer({
     certPath: path.join(app.getPath('userData'), 'remote-cert.json'),
-    assets: { html: phoneHtml, js: phoneJs, css: phoneCss },
+    assets: { html: phoneHtml, js: phoneJs, css: DISPLAY_FONT_CSS + phoneCss },
   });
   sharedMemoryClient.on('physics', (data) => remoteServer.updatePhysics(data));
   sharedMemoryClient.on('static', (data) => remoteServer.updateStatic(data));

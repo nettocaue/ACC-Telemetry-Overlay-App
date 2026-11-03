@@ -157,9 +157,7 @@
       </footer>
 
       <div class="display" id="display">
-        <div class="dsp-rpm">
-          <div class="dsp-rpm-fill" id="dsp-rpm-fill"></div>
-        </div>
+        <div class="dsp-rpm" id="dsp-rpm-bar"></div>
         <div class="dsp-body">
           <div class="dsp-side">
             <span class="dsp-lights" id="dsp-lights" title="Farol">
@@ -229,11 +227,12 @@
               </div>
             </div>
             <div class="dsp-tyres-row">
-              <div class="dsp-tyres">
-                <div class="dsp-tyre" data-t="0"><b>--</b><i>--</i></div>
-                <div class="dsp-tyre" data-t="1"><b>--</b><i>--</i></div>
-                <div class="dsp-tyre" data-t="2"><b>--</b><i>--</i></div>
-                <div class="dsp-tyre" data-t="3"><b>--</b><i>--</i></div>
+              <div class="dsp-car">
+                <div class="dsp-chassis" aria-hidden="true"></div>
+                <div class="dsp-tyre dsp-fl" data-t="0"><b>--</b><i>--</i></div>
+                <div class="dsp-tyre dsp-fr" data-t="1"><b>--</b><i>--</i></div>
+                <div class="dsp-tyre dsp-rl" data-t="2"><b>--</b><i>--</i></div>
+                <div class="dsp-tyre dsp-rr" data-t="3"><b>--</b><i>--</i></div>
               </div>
               <div class="dsp-clock">
                 <span id="dsp-clock">--:--</span>
