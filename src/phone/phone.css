@@ -1920,3 +1920,50 @@ body {
   letter-spacing: 0.06em;
   font-size: 2.1vh;
 }
+
+/* Each shortcut lights up in its own colour while it's active:
+   pit request yellow, lights blue, pit limiter orange, ignition red,
+   starter green. Inactive buttons stay neutral. */
+.shortcut[data-button] {
+  --on: #1adc2a;
+  --on-bg: #031a05;
+}
+
+.shortcut[data-button='pitRequest'] {
+  --on: #f0c000;
+  --on-bg: #1f1900;
+}
+
+.shortcut[data-button='flash'] {
+  --on: #3d8bff;
+  --on-bg: #030c1f;
+}
+
+.shortcut[data-button='pitLimiter'] {
+  --on: #ff7a1a;
+  --on-bg: #211004;
+}
+
+.shortcut[data-button='ignition'] {
+  --on: #ff3b3b;
+  --on-bg: #210505;
+}
+
+.shortcut[data-button='starter'] {
+  --on: #1adc2a;
+  --on-bg: #031a05;
+}
+
+.shortcut-pit,
+.dash.style-display .shortcut-pit {
+  border-color: #8f8f8f;
+  color: #e9e9e9;
+}
+
+.dash .shortcut.is-on,
+.dash.style-display .shortcut.is-on {
+  border-color: var(--on);
+  color: var(--on);
+  background: var(--on-bg);
+  box-shadow: 0 0 1.4vh color-mix(in srgb, var(--on) 35%, transparent);
+}
