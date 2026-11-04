@@ -1693,3 +1693,225 @@ body {
 .dsp-pedal-gas i {
   background: #1adc2a;
 }
+
+/* --- Display style for the Volante and Controle tabs ------------------------ */
+/* Same look as the display dash: Orbitron, square boxes, outlined digits. */
+
+.dash.style-display .view-wheel,
+.dash.style-display .view-pad,
+.dash.style-display .settings-panel h2,
+.dash.style-display .settings-panel h3 {
+  font-family: 'Orbitron', ui-monospace, monospace;
+  --line: #e9e9e9;
+}
+
+/* Shift lights become slanted squares on the wheel/controller tabs. */
+.dash.style-display.is-wheel .led {
+  border-radius: 0.2vh;
+  aspect-ratio: 1.5;
+  transform: skewX(-18deg);
+}
+
+.dash.style-display .view-wheel button,
+.dash.style-display .view-pad button {
+  font-family: inherit;
+  letter-spacing: 0.08em;
+}
+
+/* Boxes: square corners, thick lines, black fill. */
+.dash.style-display .shortcut,
+.dash.style-display .paddle,
+.dash.style-display .view-wheel .ghost-btn,
+.dash.style-display .view-pad .ghost-btn,
+.dash.style-display .pad-btn,
+.dash.style-display .slider-track,
+.dash.style-display .steer-track {
+  border-radius: 0.3vh;
+  border-width: 0.35vh;
+  background: #030303;
+  box-shadow: none;
+}
+
+.dash.style-display .shortcut {
+  border-color: #8f8f8f;
+  color: #e9e9e9;
+  font-size: 2vh;
+}
+
+.dash.style-display .shortcut.is-down,
+.dash.style-display .pad-btn.is-down {
+  background: #ff7a1a;
+  border-color: #ff7a1a;
+  color: #050505;
+}
+
+.dash.style-display .shortcut.is-on {
+  border-color: #1adc2a;
+  color: #1adc2a;
+  background: #031a05;
+}
+
+.dash.style-display .shortcut.is-on-blue {
+  border-color: #3d8bff;
+  color: #8fbcff;
+  background: #030c1f;
+}
+
+.dash.style-display .shortcut-pit {
+  border-color: #f0c000;
+  color: #f0c000;
+}
+
+.dash.style-display .shortcut-value {
+  color: #ff9a4d;
+  font-size: 2.2vh;
+  letter-spacing: 0.1em;
+}
+
+/* Gear: glowing like the dash; speed outlined. */
+.dash.style-display .wheel-gear,
+.dash.style-display .pad-gear {
+  color: #dafff6;
+  text-shadow: 0 0 2.4vh rgba(150, 255, 230, 0.45);
+  font-weight: 800;
+}
+
+.dash.style-display .wheel-gear.limiter,
+.dash.style-display .pad-gear.limiter {
+  color: #3d8bff;
+  text-shadow: 0 0 2.4vh rgba(61, 139, 255, 0.6);
+}
+
+.dash.style-display .wheel-gear.flash,
+.dash.style-display .pad-gear.flash {
+  color: #ff7a1a;
+}
+
+.dash.style-display .wheel-speed,
+.dash.style-display .pad-speed {
+  color: #f0c000;
+}
+
+.dash.style-display .wheel-speed > span:first-child,
+.dash.style-display .pad-speed > span {
+  color: transparent;
+  -webkit-text-stroke: 0.2vh #f0c000;
+}
+
+/* Paddles / bumpers: orange lines like the RPM and bias boxes. */
+.dash.style-display .paddle,
+.dash.style-display .pad-shoulder {
+  border-color: #ff7a1a;
+  color: #ff9a4d;
+}
+
+.dash.style-display .paddle:active,
+.dash.style-display .paddle.hit {
+  background: #ff7a1a;
+  color: #050505;
+}
+
+/* Pedal sliders: segmented fill. */
+.dash.style-display .slider-track {
+  border-color: #8f8f8f;
+}
+
+.dash.style-display .pedal-slider.is-pressed .slider-track {
+  border-color: #e9e9e9;
+}
+
+.dash.style-display .slider-fill {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0 2.6vh,
+    #030303 2.6vh 3.2vh
+  );
+}
+
+.dash.style-display .slider-label,
+.dash.style-display .stick-label {
+  font-size: 1.9vh;
+  letter-spacing: 0.14em;
+}
+
+/* Steering meter. */
+.dash.style-display .steer-track {
+  border-color: #8f8f8f;
+  height: 2.4vh;
+}
+
+.dash.style-display .steer-dot {
+  border-radius: 0.2vh;
+  width: 2.4vh;
+  height: 3.6vh;
+  background: #ff7a1a;
+  box-shadow: 0 0 1.2vh rgba(255, 122, 26, 0.7);
+}
+
+.dash.style-display .steer-center-mark {
+  background: #e9e9e9;
+}
+
+/* Controller: line-art sticks and buttons. */
+.dash.style-display .stick-ring {
+  background: #030303;
+  border: 0.35vh solid #8f8f8f;
+  box-shadow: inset 0 0 0 1.4vh #030303, inset 0 0 0 1.6vh #1a1d22;
+}
+
+.dash.style-display .stick.is-pressed .stick-ring {
+  border-color: #e9e9e9;
+}
+
+.dash.style-display .stick-knob {
+  background: #0a0a0a;
+  border: 0.45vh solid #ff7a1a;
+  box-shadow: 0 0 1.6vh rgba(255, 122, 26, 0.45), inset 0 0 0 0.9vh #141414;
+}
+
+.dash.style-display .pad-btn {
+  border-color: #8f8f8f;
+  color: #e9e9e9;
+}
+
+.dash.style-display .face .pad-btn {
+  border-radius: 50%;
+  background: #030303;
+  -webkit-text-stroke: 0;
+}
+
+.dash.style-display .face-y {
+  border-color: #f0c000;
+}
+
+.dash.style-display .face-x {
+  border-color: #3d8bff;
+}
+
+.dash.style-display .face-b {
+  border-color: #ff3b3b;
+}
+
+.dash.style-display .face-a {
+  border-color: #1adc2a;
+}
+
+.dash.style-display .pad-pill {
+  border-radius: 0.3vh;
+}
+
+/* Start overlay and status line. */
+.dash.style-display .wheel-start {
+  border-radius: 0.3vh;
+}
+
+.dash.style-display .start-btn {
+  border-radius: 0.3vh;
+  font-family: inherit;
+  letter-spacing: 0.1em;
+}
+
+.dash.style-display .wheel-status {
+  letter-spacing: 0.06em;
+  font-size: 2.1vh;
+}
