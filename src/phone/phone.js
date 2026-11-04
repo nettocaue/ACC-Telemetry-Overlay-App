@@ -360,7 +360,7 @@
     // Shortcut state shown on the buttons themselves.
     state('tc', (el) => setText(el, t.tc == null ? 'TC -' : `TC ${t.tc}`));
     state('abs', (el) => setText(el, t.abs == null ? 'ABS -' : `ABS ${t.abs}`));
-    state('pitLimiter', (el) => setClass(el, 'is-on-blue', t.pitLimiter));
+    state('pitLimiter', (el) => setClass(el, 'is-on', t.pitLimiter));
     state('ignition', (el) => setClass(el, 'is-on', t.ignition));
     state('starter', (el) => setClass(el, 'is-on', t.engineRunning));
     state('flash', (el) => setClass(el, 'is-on', t.flashing));
