@@ -167,6 +167,50 @@ export class RemoteServer extends EventEmitter {
     this.physics = physics;
     this.lastPhysicsAt = Date.now();
     this._detectHaptics(physics);
+    this._learnRevLimit(physics);
+  }
+
+  // The "max RPM" games publish is often above where the engine actually
+  // cuts out, so the RPM bar never filled up before the limiter. Use the
+  // car's real limit when the game gives it (ACC currentMaxRpm), and learn
+  // the limiter from the engine itself: full throttle with the revs pinned
+  // at the same value for a moment = we're bouncing off the limiter.
+  _learnRevLimit(p) {
+    const car = this.staticData?.carModel ?? '';
+    const rl = this.revLimit;
+    if (!rl || rl.car !== car) {
+      this.revLimit = { car, learned: 0, plateauAt: 0, plateauRpm: 0, topGear: 0 };
+      return;
+    }
+    const rpm = p.rpm ?? 0;
+    const gear = p.gear ?? 0;
+    const now = Date.now();
+    rl.topGear = Math.max(rl.topGear, gear);
+    // Flat revs at full throttle also happen at top speed in the highest
+    // gear, or with the pit limiter on: those aren't the rev limiter.
+    const topSpeedPlateau = rl.topGear >= 5 && gear >= rl.topGear;
+    if (!(rpm > 0) || (p.gas ?? 0) < 0.9 || p.pitLimiterOn || topSpeedPlateau) {
+      rl.plateauAt = 0;
+      return;
+    }
+    if (rl.plateauAt && Math.abs(rpm - rl.plateauRpm) <= rl.plateauRpm * 0.015) {
+      if (now - rl.plateauAt >= 250 && rpm > rl.learned * 0.98) {
+        rl.learned = Math.max(rl.learned, rl.plateauRpm, rpm);
+      }
+    } else {
+      rl.plateauAt = now;
+      rl.plateauRpm = rpm;
+    }
+    if (rl.learned && rpm > rl.learned) rl.learned = rpm;
+  }
+
+  _effectiveMaxRpm() {
+    const p = this.physics;
+    const reported = p?.currentMaxRpm > 0 ? p.currentMaxRpm : this.staticData?.maxRpm || 9000;
+    const learned = this.revLimit?.learned ?? 0;
+    // Only trust a learned limit that's plausible (not a mid-range plateau).
+    if (learned > reported * 0.75 && learned < reported) return learned;
+    return reported;
   }
 
   updateStatic(staticData) {
@@ -367,7 +411,7 @@ export class RemoteServer extends EventEmitter {
       gear,
       speed: p ? Math.round(p.speedKmh) : 0,
       rpm: p?.rpm ?? 0,
-      maxRpm: s?.maxRpm || 9000,
+      maxRpm: this._effectiveMaxRpm(),
       gas: p?.gas ?? 0,
       brake: p?.brake ?? 0,
       clutch: p?.clutch ?? 0,
