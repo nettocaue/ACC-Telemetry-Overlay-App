@@ -115,7 +115,7 @@ function parsePhysics(buf) {
   r.arrF(3); // localVelocity
   r.i32(); // P2PActivation
   r.i32(); // P2PStatus
-  r.i32(); // currentMaxRpm
+  const currentMaxRpm = r.i32(); // the car's actual rev limit
   r.arrF(4); // mz
   r.arrF(4); // fz
   r.arrF(4); // my
@@ -153,6 +153,7 @@ function parsePhysics(buf) {
     wheelPressure,
     tyreWear,
     brakeBiasRaw,
+    currentMaxRpm,
     tyreCoreTempEarly,
     tyreCoreTemp,
     carDamage: {
