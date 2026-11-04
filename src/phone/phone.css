@@ -1328,9 +1328,21 @@ body {
   display: grid;
 }
 
-/* One RPM bar is enough: the round shift lights hide on the display dash. */
-.dash.style-display:not(.is-wheel) .shift-lights {
+/* One RPM bar is enough: in the display style the round shift lights hide
+   and each tab shows its own segmented bar (wheel/controller: above the gear). */
+.dash.style-display .shift-lights {
   visibility: hidden;
+}
+
+.view-rpm {
+  display: none;
+}
+
+.dash.style-display .view-rpm {
+  display: grid;
+  width: 100%;
+  height: 4.4vh;
+  flex-shrink: 0;
 }
 
 .dsp-rpm {
@@ -1703,13 +1715,6 @@ body {
 .dash.style-display .settings-panel h3 {
   font-family: 'Orbitron', ui-monospace, monospace;
   --line: #e9e9e9;
-}
-
-/* Shift lights become slanted squares on the wheel/controller tabs. */
-.dash.style-display.is-wheel .led {
-  border-radius: 0.2vh;
-  aspect-ratio: 1.5;
-  transform: skewX(-18deg);
 }
 
 .dash.style-display .view-wheel button,

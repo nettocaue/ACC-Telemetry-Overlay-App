@@ -219,37 +219,45 @@
     return h > 0 ? `faltam ${h}:${pad2(m)}:${pad2(sec)}` : `faltam ${m}:${pad2(sec)}`;
   }
 
-  // Segmented RPM bar: same colours and thresholds as the shift lights.
-  const DSP_SEGMENTS = 24;
-  const dspSegs = [];
-  for (let i = 0; i < DSP_SEGMENTS; i++) {
-    const seg = document.createElement('span');
-    seg.className = 'dsp-seg';
-    $('dsp-rpm-bar').appendChild(seg);
-    dspSegs.push(seg);
-  }
-  const segColor = (i) =>
-    i < DSP_SEGMENTS / 3 ? 'on-green' : i < (DSP_SEGMENTS * 2) / 3 ? 'on-yellow' : 'on-red';
+  // Segmented RPM bars (dash, wheel and controller tabs): same colours and
+  // thresholds as the shift lights.
+  const rpmBars = [...document.querySelectorAll('.rpm-bar')].map((bar) => {
+    const count = Number(bar.dataset.segments) || 24;
+    bar.style.gridTemplateColumns = `repeat(${count}, 1fr)`;
+    const segs = [];
+    for (let i = 0; i < count; i++) {
+      const seg = document.createElement('span');
+      seg.className = 'dsp-seg';
+      bar.appendChild(seg);
+      segs.push(seg);
+    }
+    return segs;
+  });
+  const segColor = (i, n) => (i < n / 3 ? 'on-green' : i < (n * 2) / 3 ? 'on-yellow' : 'on-red');
 
-  function renderDisplay(t, now) {
+  function renderRpmBars(t, now) {
     const ratio = t.maxRpm ? t.rpm / t.maxRpm : 0;
     const blink = ratio >= SHIFT_BLINK && Math.floor(now / 90) % 2 === 0;
-    const lit =
-      ratio <= SHIFT_START
-        ? 0
-        : Math.ceil(((ratio - SHIFT_START) / (SHIFT_FULL - SHIFT_START)) * DSP_SEGMENTS);
-    dspSegs.forEach((seg, i) => {
-      const cls =
-        ratio >= SHIFT_BLINK
-          ? blink
-            ? 'dsp-seg on-blue'
-            : 'dsp-seg'
-          : i < lit
-            ? `dsp-seg ${segColor(i)}`
-            : 'dsp-seg';
-      if (seg.className !== cls) seg.className = cls;
-    });
+    const fraction =
+      ratio <= SHIFT_START ? 0 : (ratio - SHIFT_START) / (SHIFT_FULL - SHIFT_START);
+    for (const segs of rpmBars) {
+      const n = segs.length;
+      const lit = Math.ceil(fraction * n);
+      segs.forEach((seg, i) => {
+        const cls =
+          ratio >= SHIFT_BLINK
+            ? blink
+              ? 'dsp-seg on-blue'
+              : 'dsp-seg'
+            : i < lit
+              ? `dsp-seg ${segColor(i, n)}`
+              : 'dsp-seg';
+        if (seg.className !== cls) seg.className = cls;
+      });
+    }
+  }
 
+  function renderDisplay(t, now) {
     setText($('dsp-current'), formatLap(t.currentLap));
     setClass($('dsp-current'), 'invalid', t.validLap === false);
     const deltaEl = $('dsp-delta');
@@ -418,7 +426,10 @@
     setText(fuelLapsEl, t.fuelLaps > 0 ? t.fuelLaps.toFixed(1) : '--');
     setClass(fuelLapsEl, 'low', t.fuelLaps > 0 && t.fuelLaps < 2);
 
-    if (settings.dashDisplay) renderDisplay(t, now);
+    if (settings.dashDisplay) {
+      renderRpmBars(t, now);
+      renderDisplay(t, now);
+    }
 
     // Pedals + force feedback
     renderPedal('clutch', t.clutch);
